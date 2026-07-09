@@ -79,6 +79,11 @@ test-results/
 # Vite
 .vite/
 
+# Dev-sync provisioned grants (local only, contains delegated zcaps)
+dev-grants.local.json
+public/dev-grants.local.json
+*.local.json
+
 # MacOS
 .DS_Store
 

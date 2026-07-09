@@ -1,0 +1,75 @@
+/**
+ * Application configuration: environment-variable exports and app-wide
+ * constants. Adapted from freewallet's app.config: WAS host, this app's origin,
+ * and the registry of the eight storage collections.
+ */
+// Vite injects `import.meta.env` in the browser build; a plain Node context
+// (the dev provisioning script, or a bare `tsx` import) has no such object, so
+// fall back to an empty record rather than throwing on property access.
+const env: Record<string, string | undefined> =
+  (import.meta.env as Record<string, string | undefined> | undefined) ?? {}
+
+// This app's own origin, used later for CHAPI wallet registration and the
+// anti-phishing origin binding on the app-key credential.
+export const APP_ORIGIN = env.VITE_APP_ORIGIN || 'http://localhost:5173'
+
+// Auth mode: 'dev' (default) boots straight into the local dev-seed store with
+// no login gate (offline behavior, optionally dev-syncing under WAS_DEV_SYNC);
+// 'wallet' gates the app behind Login With Wallet (CHAPI).
+export const AUTH_MODE: 'dev' | 'wallet' =
+  env.VITE_AUTH_MODE === 'wallet' ? 'wallet' : 'dev'
+
+// CHAPI mediator base; the requesting origin is appended at load time.
+export const MEDIATOR_BASE = 'https://authn.io/mediator?origin='
+
+// Remote WAS server URL. When set, a remote WAS Space is available as a sync
+// target. In wallet mode this is the expected host of every granted zcap's
+// invocationTarget (grants pointing anywhere else are rejected at login).
+export const WAS_SERVER_URL = env.VITE_WAS_SERVER_URL
+
+// Dev-sync mode (P2, CHAPI bypassed): when truthy, the app loads a locally
+// provisioned grants file and replicates to a running was-teaching-server using
+// the dev seed's delegated zcaps. Off by default (offline-only).
+export const WAS_DEV_SYNC = env.VITE_WAS_DEV_SYNC === 'true' || env.VITE_WAS_DEV_SYNC === '1'
+
+// URL the app fetches the dev grants JSON from (a git-ignored file written into
+// `public/` by scripts/provision-dev-grants.ts; Vite serves `public/` at root).
+export const WAS_DEV_GRANTS_URL = env.VITE_WAS_DEV_GRANTS_URL || '/dev-grants.local.json'
+
+// Replication tuning (optional). Undefined leaves the adapter defaults.
+export const WAS_SYNC_BATCH_SIZE: number | undefined = env.VITE_WAS_SYNC_BATCH_SIZE
+  ? Number(env.VITE_WAS_SYNC_BATCH_SIZE)
+  : undefined
+export const WAS_SYNC_RETRY_MS: number | undefined = env.VITE_WAS_SYNC_RETRY_MS
+  ? Number(env.VITE_WAS_SYNC_RETRY_MS)
+  : undefined
+
+// The pull side is poll-based (no server-side live stream yet), so an open
+// session only sees another device's changes when it re-pulls. Besides the
+// `online`-reconnect reSync, a low-frequency periodic reSync keeps open sessions
+// converging live. Defaults to 15s; override (e.g. faster in e2e) via env.
+export const WAS_SYNC_POLL_MS: number = env.VITE_WAS_SYNC_POLL_MS
+  ? Number(env.VITE_WAS_SYNC_POLL_MS)
+  : 15000
+
+/**
+ * The eight storage collections, each a logical `key` (camelCase, used as the
+ * localStore / RxDB collection handle) mapped to its WAS collection `id` (the
+ * deliberately unprefixed, generic name shared across interoperable apps). All
+ * are EDV-encrypted client-side. `current-focus` is a singleton.
+ */
+export const LA_COLLECTIONS: Array<{ key: string; id: string }> = [
+  { key: 'actionItems', id: 'action-items' },
+  { key: 'projects', id: 'projects' },
+  { key: 'goals', id: 'goals' },
+  { key: 'questions', id: 'questions' },
+  { key: 'answers', id: 'answers' },
+  { key: 'webLinks', id: 'web-links' },
+  { key: 'thoughts', id: 'thoughts' },
+  { key: 'currentFocus', id: 'current-focus' }
+]
+
+/** Resolve a localStore/RxDB collection key from its WAS collection id. */
+export function collectionKeyForId(id: string): string | undefined {
+  return LA_COLLECTIONS.find((entry) => entry.id === id)?.key
+}

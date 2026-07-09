@@ -1,76 +1,70 @@
 {
-  "name": "@interop/isomorphic-lib-template",
-  "description": "A Typescript/Javascript isomorphic library template, for use in the browser, Node.js, and React Native.",
+  "name": "life-advisor",
+  "description": "A personal-productivity app (action items, projects, goals, questions, thoughts, web links, focus modes, history) built as a client-side React SPA on Wallet Attached Storage.",
   "version": "0.0.1",
+  "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm run clear && tsc",
-    "clear": "rimraf dist/*",
     "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.dev.json && vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.dev.json",
     "fix": "eslint --fix src test && pnpm run format",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.md\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"test/**/*.ts\" \"*.md\"",
     "lint": "eslint src test",
-    "prepare": "pnpm run build",
-    "rebuild": "pnpm run clear && pnpm run build",
-    "test": "pnpm run fix && pnpm run lint && pnpm run test:node && pnpm run test:browser",
+    "test": "pnpm run lint && pnpm run test:node",
     "test:browser": "playwright test",
+    "test:browser:was": "playwright test -c playwright.was.config.ts",
+    "test:browser:wallet": "playwright test -c playwright.wallet.config.ts",
     "test:node": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "provision:dev": "npx tsx scripts/provision-dev-grants.ts"
   },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE.md"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "react-native": "./dist/index.js",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    }
-  },
-  "module": "dist/index.js",
-  "browser": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "sideEffects": false,
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@interop/data-integrity-core": "^8.1.0",
+    "@interop/ed25519-signature": "^7.1.3",
+    "@interop/ezcap": "^7.3.2",
+    "@interop/security-document-loader": "^9.4.1",
+    "@interop/vc": "^11.0.5",
+    "@interop/verifier-core": "^3.3.1",
+    "@interop/was-client": "^0.13.1",
+    "@interop/webkms-client": "^14.7.1",
+    "@interop/x25519-key-agreement-key": "^5.1.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "credential-handler-polyfill": "^4.1.0",
+    "dexie": "^4.4.2",
+    "json-canonicalize": "^2.0.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router": "^8.1.0",
+    "rxdb": "^17.0.0",
+    "uuidv7": "^1.2.1",
+    "web-credential-handler": "^3.0.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
     "@types/node": "^26.0.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
+    "fake-indexeddb": "^6.0.0",
     "globals": "^17.6.0",
     "prettier": "^3.8.3",
-    "rimraf": "^6.1.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4",
     "vite": "^8.0.14",
     "vitest": "^4.1.7"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
-  "keywords": [
-    "isomorphic"
-  ],
   "packageManager": "pnpm@11.5.0",
   "engines": {
     "node": ">=24.0"
   },
-  "author": {
-    "name": "Interop Alliance",
-    "url": "https://github.com/interop-alliance/"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/interop-alliance/isomorphic-lib-template.git"
-  },
-  "homepage": "https://github.com/interop-alliance/isomorphic-lib-template",
-  "bugs": "https://github.com/interop-alliance/isomorphic-lib-template/issues"
+  "license": "MIT"
 }

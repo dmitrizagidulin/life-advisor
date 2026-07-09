@@ -1,0 +1,55 @@
+/**
+ * The "Pensieve" quick-capture box (ports `thoughts/_new`): a new thought defaults
+ * onto today's virtual day parent via the thought factory.
+ */
+import { useState } from 'react'
+import { Box, Button, TextField } from '@mui/material'
+import { createThought } from '@/domain/factories'
+import { getDeviceId } from '@/stores/storageManager'
+import { useThoughts } from '@/stores/entities/thoughts'
+
+export function NewThoughtBox() {
+  const insert = useThoughts((s) => s.insert)
+  const [text, setText] = useState('')
+
+  async function save() {
+    const name = text.trim()
+    if (name === '') {
+      return
+    }
+    await insert(createThought({ name, deviceId: getDeviceId() }))
+    setText('')
+  }
+
+  return (
+    <Box
+      sx={{ display: 'flex', gap: 1, mb: 3, alignItems: 'flex-start' }}
+      data-testid="new-thought-box"
+    >
+      <TextField
+        fullWidth
+        multiline
+        minRows={1}
+        size="small"
+        label="Pensieve -- capture a thought"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            void save()
+          }
+        }}
+        slotProps={{ htmlInput: { 'data-testid': 'new-thought-input' } }}
+      />
+      <Button
+        variant="contained"
+        onClick={() => void save()}
+        data-testid="new-thought-save"
+        sx={{ mt: 0.5 }}
+      >
+        Save
+      </Button>
+    </Box>
+  )
+}
