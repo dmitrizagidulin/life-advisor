@@ -1,10 +1,8 @@
-# Example Isomorphic TS/JS Lib Template _(@interop/isomorphic-lib-template)_
+# life-advisor
 
-[![Node.js CI](https://github.com/interop-alliance/isomorphic-lib-template/workflows/CI/badge.svg)](https://github.com/interop-alliance/isomorphic-lib-template/actions?query=workflow%3A%22CI%22)
-[![NPM Version](https://img.shields.io/npm/v/@interop/isomorphic-lib-template.svg)](https://npm.im/@interop/isomorphic-lib-template)
-
-> A Typescript/Javascript isomorphic library template, for use in the browser,
-> Node.js, and React Native.
+> A personal-productivity app (action items, projects, goals, questions,
+> thoughts, web links, focus modes, history) built as a client-side React SPA
+> on Wallet Attached Storage.
 
 ## Table of Contents
 
@@ -12,51 +10,117 @@
 - [Security](#security)
 - [Install](#install)
 - [Usage](#usage)
+- [Testing](#testing)
 - [Contribute](#contribute)
 - [License](#license)
 
 ## Background
 
-TBD
+`life-advisor` is built in the "Bring Your Own Everything" model: the user
+brings their own identity (a wallet) and their own storage (a Wallet Attached
+Storage (WAS) space), and the app stores everything encrypted in that user-owned
+space.
+
+Key properties:
+
+- **Client-side SPA, no app server.** All application logic runs in the
+  browser. Storage and identity are external, user-owned services.
+- **Relying party, not a wallet.** The app authenticates via "Login With
+  Wallet" (CHAPI) and stores data using wallet-delegated authorization
+  capabilities (zCaps). It never holds the wallet's root key.
+- **Encrypted at rest, client-side.** Every collection is encrypted as an
+  Encrypted Data Vault (EDV); the server only ever sees opaque JWE envelopes.
+- **Local-first.** RxDB (IndexedDB) holds the encrypted envelopes locally and
+  replicates them to WAS. On unlock, documents decrypt into in-memory stores;
+  all queries are in-memory selectors.
+- **Multi-app interop is a design goal.** Collections use generic, unprefixed
+  names and per-collection encryption keys so other apps can eventually be
+  granted access to individual collections.
+
+The full design -- identity and key derivation, the login flows, the sync and
+conflict-resolution model, the id/timestamp planes, and the ported domain rules
+-- lives in [ARCHITECTURE.md](ARCHITECTURE.md). Read it before making
+structural changes.
 
 ## Security
 
-TBD
+- The app's identity and all vault keys derive from a single 32-byte master
+  seed, stored in the user's wallet as a self-issued `LifeAdvisorKey`
+  credential and recovered at login. Each collection's encryption key derives
+  from the master via HKDF, so sharing one collection exposes nothing about the
+  others.
+- The wallet is the trust anchor; CHAPI origin binding plus an `origin` field
+  baked into the seed credential guard against phishing.
+- While the app is unlocked, the seed and session live in IndexedDB, so
+  cross-site scripting is the primary threat model.
+
+See the "Relying-party verification contract" and "Trust model" sections of
+[ARCHITECTURE.md](ARCHITECTURE.md) for details.
 
 ## Install
 
-- Node.js 24+ is recommended.
-
-### PNPM
-
-To install via PNPM:
+Requires Node.js 24+ and [pnpm](https://pnpm.io/).
 
 ```
-pnpm install @interop/isomorphic-lib-template
-```
-
-### Development
-
-To install locally (for development):
-
-```
-git clone https://github.com/interop/isomorphic-lib-template.git
-cd isomorphic-lib-template
+git clone https://github.com/dmitrizagidulin/life-advisor.git
+cd life-advisor
 pnpm install
 ```
 
 ## Usage
 
-TBD
+Start the dev server (Vite, http://localhost:5173):
+
+```
+pnpm dev
+```
+
+### Auth modes
+
+The app has two auth modes (see `src/app.config.ts`):
+
+- **wallet** -- the real "Login With Wallet" CHAPI flow against a wallet.
+- **dev** -- CHAPI bypassed; the app loads pre-provisioned grants from a
+  git-ignored JSON file. Against a running local WAS server
+  (`was-teaching-server`), provision those grants with:
+
+  ```
+  SERVER_URL=http://localhost:3002 pnpm provision:dev
+  ```
+
+### Other scripts
+
+```
+pnpm build        # typecheck + production build
+pnpm typecheck    # tsc --noEmit
+pnpm lint         # eslint
+pnpm fix          # eslint --fix + prettier
+```
+
+## Testing
+
+```
+pnpm test                  # lint + unit tests (Vitest)
+pnpm test:coverage         # unit tests with coverage
+pnpm test:browser          # Playwright, offline (no WAS server needed)
+pnpm test:browser:was      # Playwright against a local WAS server
+pnpm test:browser:wallet   # Playwright driving the full wallet login flow
+```
+
+Unit tests cover the pure domain layer (`src/domain/`) and the encryption and
+conflict-resolution paths. The WAS-backed browser tests use two browser
+profiles sharing one seed to verify cross-device replication, concurrent-edit
+last-writer-wins, and offline/online recovery.
 
 ## Contribute
 
-PRs accepted. See [CONTRIBUTING.md](CONTRIBUTING.md) for editor setup (Prettier,
-ESLint, and EditorConfig) and how it maps to CI.
+PRs accepted. See [CONTRIBUTING.md](CONTRIBUTING.md) for editor setup
+(Prettier, ESLint, and EditorConfig) and how it maps to CI.
 
 If editing the Readme, please conform to the
-[standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+[standard-readme](https://github.com/RichardLitt/standard-readme)
+specification.
 
 ## License
 
-[MIT License](LICENSE.md) © 2026 Interop Alliance.
+[MIT License](LICENSE.md) © 2026 Dmitri Zagidulin.
