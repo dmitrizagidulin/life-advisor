@@ -4,71 +4,73 @@
  * question id from a `?question=<id>` query param on new.
  */
 import { useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router'
-import { Box, Button, Stack, TextField, Typography } from '@mui/material'
+import { useSearchParams } from 'react-router'
+import { TextField } from '@mui/material'
 import { createAnswer } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
 import { getDeviceId } from '@/stores/storageManager'
 import { useAnswers } from '@/stores/entities/answers'
+import {
+  EntityFormShell,
+  commitEntity,
+  useEntityForm
+} from '@/components/EntityFormShell'
+import { NotFound } from '@/components/NotFound'
 
 export function AnswerFormPage({ mode }: { mode: 'new' | 'edit' }) {
-  const { id } = useParams()
+  const { existing, insert, update, navigate, notFound } = useEntityForm(
+    useAnswers,
+    mode
+  )
   const [search] = useSearchParams()
-  const navigate = useNavigate()
-  const existing = useAnswers((s) => (id ? s.byId.get(id) : undefined))
-  const insert = useAnswers((s) => s.insert)
-  const update = useAnswers((s) => s.update)
 
   const questionId = existing?.parentKey ?? search.get('question') ?? ''
   const [name, setName] = useState(existing?.name ?? '')
 
-  if (mode === 'edit' && !existing) {
-    return <Typography>Answer not found.</Typography>
+  if (notFound) {
+    return <NotFound label="Answer" />
   }
 
+  // A new answer with no parent question would be an orphan that no
+  // `forParent` filter ever matches, so block saving without one.
+  const canSave = name.trim() !== '' && (mode === 'edit' || questionId !== '')
+
   async function save() {
-    if (name.trim() === '') {
+    if (!canSave) {
       return
     }
-    if (mode === 'new') {
-      await insert(
+    await commitEntity({
+      mode,
+      insert,
+      update,
+      buildNew: () =>
         createAnswer({
           name: name.trim(),
           parentKey: questionId,
           deviceId: getDeviceId()
-        })
-      )
-    } else {
-      await update({ ...existing!, name: name.trim(), updatedAt: nowIso() })
-    }
+        }),
+      buildEdit: () => ({ ...existing!, name: name.trim(), updatedAt: nowIso() })
+    })
     navigate(questionId ? `/questions/${questionId}` : '/questions')
   }
 
   return (
-    <Box data-testid="answer-form-page" sx={{ maxWidth: 520 }}>
-      <Typography variant="h5" gutterBottom>
-        {mode === 'new' ? 'New Answer' : 'Edit Answer'}
-      </Typography>
-      <Stack spacing={2}>
-        <TextField
-          label="Answer"
-          multiline
-          minRows={2}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          slotProps={{ htmlInput: { 'data-testid': 'answer-name-input' } }}
-        />
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            onClick={() => void save()}
-            data-testid="save-answer"
-          >
-            Save
-          </Button>
-          <Button onClick={() => navigate(-1)}>Cancel</Button>
-        </Stack>
-      </Stack>
-    </Box>
+    <EntityFormShell
+      testId="answer-form-page"
+      title={mode === 'new' ? 'New Answer' : 'Edit Answer'}
+      canSave={canSave}
+      saveTestId="save-answer"
+      onSave={() => void save()}
+      onCancel={() => navigate(-1)}
+    >
+      <TextField
+        label="Answer"
+        multiline
+        minRows={2}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        slotProps={{ htmlInput: { 'data-testid': 'answer-name-input' } }}
+      />
+    </EntityFormShell>
   )
 }

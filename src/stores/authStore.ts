@@ -25,6 +25,7 @@ import {
 } from '@/auth/loginFlow'
 import {
   clearAppSession,
+  loadPersistedSeed,
   persistAppSession,
   restoreAppSession,
   isNearExpiry
@@ -37,7 +38,11 @@ import {
   requireStore,
   setLocalStore
 } from '@/stores/storageManager'
-import { clearAllEntityStores, hydrateAll } from '@/stores/rehydrate'
+import {
+  cancelScheduledRehydrates,
+  clearAllEntityStores,
+  hydrateAll
+} from '@/stores/rehydrate'
 import { startWasSync } from '@/stores/wasSync'
 import { syncController } from '@/stores/syncController'
 import { useAppReady } from '@/stores/bootstrap'
@@ -49,14 +54,6 @@ export type AuthStatus =
   | 'unauthenticated'
   | 'authenticating'
   | 'authenticated'
-
-interface ActiveSession {
-  seed: Uint8Array
-  identity: IdentityAgents
-  parsed: ParsedGrants
-  grants: IZcap[]
-  expires: string
-}
 
 interface AuthState {
   status: AuthStatus
@@ -90,6 +87,15 @@ const EXPIRY_WARNING_MS = 60 * 60 * 1000
 const EXPIRY_WATCH_MS = 60 * 1000
 
 let expiryTimer: ReturnType<typeof setInterval> | undefined
+
+/**
+ * The in-flight `startWasSync` promise. `activateSession` (and `reconnect`)
+ * start replication fire-and-forget, but logout must not tear the controller
+ * down while `start()` is suspended mid-await -- otherwise `start()` resumes
+ * afterwards and re-registers the `online` listener and poll interval that
+ * nothing then stops. `deactivateSession` awaits this before `syncController.stop()`.
+ */
+let syncStartPromise: Promise<unknown> = Promise.resolve()
 
 /** Stops the near-expiry watch (logout / re-grant). */
 function disarmExpiryWatch(): void {
@@ -130,7 +136,13 @@ export function dbNameForController(controllerDid: string): string {
  * Opens storage + hydrates + starts sync for a validated session, persists it,
  * and flips the ready gate. Shared by login and restore.
  */
-async function activateSession(session: ActiveSession): Promise<void> {
+async function activateSession(session: {
+  seed: Uint8Array
+  identity: IdentityAgents
+  parsed: ParsedGrants
+  grants: IZcap[]
+  expires: string
+}): Promise<void> {
   if (!hasStore()) {
     const store = await LocalStore.init({
       seed: session.seed,
@@ -152,12 +164,16 @@ async function activateSession(session: ActiveSession): Promise<void> {
     }
   })
 
-  // Replication starts in the background; a down server never blocks entry.
-  void startWasSync({
+  // Replication starts in the background; a down server never blocks entry. The
+  // promise is retained so logout can await a suspended `start()` before stopping.
+  syncStartPromise = startWasSync({
     parsed: session.parsed,
     zcapClient: session.identity.zcapClient,
     onAuthError: () => useAuthStore.getState().notifyAccessExpired()
-  }).catch((err) => console.warn('WAS sync failed to start:', err))
+  })
+  void syncStartPromise.catch((err) =>
+    console.warn('WAS sync failed to start:', err)
+  )
 
   armExpiryWatch(session.expires)
 }
@@ -165,6 +181,11 @@ async function activateSession(session: ActiveSession): Promise<void> {
 /** Tears down storage + sync + entity stores (logout and re-login paths). */
 async function deactivateSession(): Promise<void> {
   disarmExpiryWatch()
+  cancelScheduledRehydrates()
+  // Let any in-flight `startWasSync` finish registering its listeners/timers
+  // before stopping, so `stop()` actually tears them down (no leaked `online`
+  // listener or poll interval).
+  await syncStartPromise.catch(() => {})
   await syncController.stop()
   if (hasStore()) {
     try {
@@ -274,16 +295,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
     set({ reconnecting: true, error: null })
     try {
-      const restored = await restoreAppSession()
-      // The seed survives grant expiry; only the grants need renewing. A
-      // missing seed means the session is unrecoverable in place.
-      const seed = restored?.seed
+      // The seed survives grant expiry; only the grants need renewing, so read
+      // it directly rather than through the session record (which is cleared
+      // once expired). A missing seed means the session is unrecoverable in
+      // place.
+      const seed = await loadPersistedSeed()
       if (!seed) {
         await get().logout()
         return
       }
       const identity = await initAppSession({ seed })
       const checked = await requestGrants({ identity })
+      // Await a possibly still-registering start before stopping (see
+      // deactivateSession), so the old listeners/timers are actually released.
+      await syncStartPromise.catch(() => {})
       await syncController.stop()
       await persistAppSession({
         session: {
@@ -295,11 +320,14 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           expires: checked.expires
         }
       })
-      void startWasSync({
+      syncStartPromise = startWasSync({
         parsed: checked.parsed,
         zcapClient: identity.zcapClient,
         onAuthError: () => useAuthStore.getState().notifyAccessExpired()
-      }).catch((err) => console.warn('WAS sync failed to restart:', err))
+      })
+      void syncStartPromise.catch((err) =>
+        console.warn('WAS sync failed to restart:', err)
+      )
       armExpiryWatch(checked.expires)
       set({
         accessExpired: false,

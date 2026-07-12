@@ -2,7 +2,17 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest'
-import { enforceDefaultDayParent, forParent, hasParent } from './parent'
+import { enforceDefaultDayParent, forParent, hasParent, isChildOf } from './parent'
+
+describe('isChildOf', () => {
+  it('matches only docs pointing at the given parent (no sorting)', () => {
+    const pred = isChildOf('project', 'p1')
+    expect(pred({ parentType: 'project', parentKey: 'p1' })).toBe(true)
+    expect(pred({ parentType: 'project', parentKey: 'p2' })).toBe(false)
+    expect(pred({ parentType: 'day', parentKey: 'p1' })).toBe(false)
+    expect(pred({})).toBe(false)
+  })
+})
 
 describe('forParent', () => {
   it('filters by type+key and sorts createdAt DESC', () => {

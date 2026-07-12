@@ -18,6 +18,14 @@ export function nowIso(): string {
   return new Date().toISOString()
 }
 
+/**
+ * Human-readable local date+time for an ISO timestamp, used by detail pages to
+ * show completion/cancellation times. Formatting follows the user's locale.
+ */
+export function formatTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString()
+}
+
 /** Local `YYYY-MM-DD` for the local day containing the given ISO timestamp. */
 export function localDayKey(iso: string): string {
   return todayKey(new Date(iso))

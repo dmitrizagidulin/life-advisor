@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { Link as RouterLink, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import {
   Box,
   Button,
@@ -20,6 +20,8 @@ import { getDeviceId } from '@/stores/storageManager'
 import { useQuestions } from '@/stores/entities/questions'
 import { useAnswers } from '@/stores/entities/answers'
 import { LinksTable } from '@/components/LinksTable'
+import { EntityShowHeader } from '@/components/EntityShowHeader'
+import { NotFound } from '@/components/NotFound'
 
 export function QuestionShowPage() {
   const { id } = useParams()
@@ -32,7 +34,7 @@ export function QuestionShowPage() {
   const [answerText, setAnswerText] = useState('')
 
   if (!question) {
-    return <Typography>Question not found.</Typography>
+    return <NotFound label="Question" />
   }
 
   async function addAnswer() {
@@ -51,18 +53,11 @@ export function QuestionShowPage() {
 
   return (
     <Box data-testid="question-show-page">
-      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-        <Button component={RouterLink} to="/questions" size="small">
-          &lt; Questions
-        </Button>
-        <Button
-          component={RouterLink}
-          to={`/questions/${question.id}/edit`}
-          size="small"
-        >
-          Edit
-        </Button>
-      </Stack>
+      <EntityShowHeader
+        backTo="/questions"
+        backLabel="Questions"
+        editTo={`/questions/${question.id}/edit`}
+      />
       <Typography variant="h4">{question.name}</Typography>
       {question.description && (
         <Typography color="text.secondary" sx={{ mb: 2 }}>

@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest'
-import { setAnswered, splitByProject } from './questions'
+import { bump, setAnswered, splitByProject } from './questions'
 import { createQuestion } from './factories'
 
 const D = 'dev'
@@ -24,6 +24,15 @@ describe('setAnswered', () => {
     const r = setAnswered(question, false, NOW)
     expect(r.answered).toBe(false)
     expect(r.answeredAt).toBe(null)
+  })
+})
+
+describe('bump', () => {
+  it('increments bumpCount and stamps updatedAt', () => {
+    const question = q({ name: 'why', bumpCount: 1 })
+    const r = bump(question, NOW)
+    expect(r.bumpCount).toBe(2)
+    expect(r.updatedAt).toBe(NOW)
   })
 })
 

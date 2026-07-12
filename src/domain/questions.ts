@@ -23,6 +23,14 @@ export function setAnswered(
   }
 }
 
+/** Increment the bump count (`bump!`). */
+export function bump(
+  question: QuestionDoc,
+  now: string = nowIso()
+): QuestionDoc {
+  return { ...question, bumpCount: question.bumpCount + 1, updatedAt: now }
+}
+
 /**
  * The questions-index split into project-parented and everything else
  * (`parent_type == 'project'`).

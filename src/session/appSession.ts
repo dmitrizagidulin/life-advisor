@@ -10,7 +10,14 @@
  * flow (same seed comes back from the wallet, same DID, same vault keys).
  */
 import type { IZcap } from '@interop/data-integrity-core'
-import { loadRecord, loadSeed, saveRecord, saveSeed, clearSeedStore } from '@/app-identity/seedStore'
+import {
+  loadRecord,
+  loadSeed,
+  saveRecord,
+  saveSeed,
+  clearSeedStore,
+  clearSessionRecord
+} from '@/app-identity/seedStore'
 
 export interface AppSessionRecord {
   controllerDid: string
@@ -110,10 +117,23 @@ export async function restoreAppSession({
     return null
   }
   if (isExpired(record.expires)) {
-    await clearAppSession({ ...(idb && { idb }) })
+    // Clear only the stale session record; the seed survives grant expiry so a
+    // reconnect can renew the grants in place against the same controller DID.
+    await clearSessionRecord({ ...(idb && { idb }) })
     return null
   }
   return { seed, ...record }
+}
+
+/**
+ * Loads just the persisted master seed, independently of session validity. A
+ * reconnect uses this because the seed outlives grant expiry (only the grants
+ * need renewing); returns `null` when no seed is persisted.
+ */
+export async function loadPersistedSeed({
+  idb
+}: { idb?: IDBFactory } = {}): Promise<Uint8Array | null> {
+  return await loadSeed({ ...(idb && { idb }) })
 }
 
 /** Wipes the persisted session (seed + record). */

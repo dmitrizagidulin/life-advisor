@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
+  bump,
   changeStatus,
   nextAction,
   serveGoalToggle,
@@ -48,6 +49,15 @@ describe('changeStatus', () => {
       expect(r.canceledAt).toBe(null)
     }
   )
+})
+
+describe('bump', () => {
+  it('increments bumpCount and stamps updatedAt', () => {
+    const p = proj({ name: 'p', bumpCount: 2 })
+    const r = bump(p, NOW)
+    expect(r.bumpCount).toBe(3)
+    expect(r.updatedAt).toBe(NOW)
+  })
 })
 
 describe('nextAction', () => {

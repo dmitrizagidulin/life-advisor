@@ -23,6 +23,7 @@ import type { IZcap } from '@interop/data-integrity-core'
 // module does not drag the barrel's RxDB replication machinery into the
 // entry chunk; the heavy adapter is loaded on demand by the SyncController.
 import {
+  WasResourceAbsentError,
   WasSyncConflictError,
   type Json,
   type MasterState,
@@ -30,21 +31,7 @@ import {
   type WasSyncPort,
   type WireDoc
 } from '@/lib/sync/types.js'
-
-/**
- * Extracts an HTTP status from a raw ky/ezcap error. `was.request()` rejects on
- * any non-2xx with `err.status` set (see `@interop/http-client`'s error
- * normaliser); this reads it defensively from either location.
- *
- * @param err {unknown}
- * @returns {number | undefined}
- */
-function errorStatus(err: unknown): number | undefined {
-  return (
-    (err as { status?: number }).status ??
-    (err as { response?: { status?: number } }).response?.status
-  )
-}
+import { httpStatusOf as errorStatus } from '@/stores/httpStatus'
 
 /**
  * Parses a quoted strong ETag (`"3"`) into its numeric revision, or `undefined`
@@ -112,12 +99,13 @@ export function createWasSyncPort({
   /**
    * Runs a conditional write, mapping the server's `412 precondition-failed`
    * into the core's `WasSyncConflictError` and letting all else propagate.
+   * Returns the raw write response so callers can read its `ETag`.
    */
   const conditionalWrite = async (
-    run: () => Promise<unknown>
-  ): Promise<void> => {
+    run: () => Promise<{ headers: Headers }>
+  ): Promise<{ headers: Headers }> => {
     try {
-      await run()
+      return await run()
     } catch (err) {
       if (errorStatus(err) === 412) {
         throw new WasSyncConflictError()
@@ -145,7 +133,7 @@ export function createWasSyncPort({
     },
 
     async putContent({ id, data, ifMatch, ifNoneMatch }) {
-      await conditionalWrite(() =>
+      const response = await conditionalWrite(() =>
         was.request({
           capability,
           path: resourcePath(id),
@@ -154,21 +142,39 @@ export function createWasSyncPort({
           headers: writeHeaders({ ifMatch, ifNoneMatch })
         })
       )
+      // The server returns the new content `version` in the write `ETag`. A
+      // browser hides it on a cross-origin response (no `Access-Control-Expose-
+      // Headers: etag`), in which case this is `undefined` and the push handler
+      // derives the version from the server's monotonic `+1` rule instead.
+      return parseEtag(response.headers.get('etag'))
     },
 
     async deleteContent({ id, ifMatch }) {
-      await conditionalWrite(() =>
-        was.request({
+      try {
+        await was.request({
           capability,
           path: resourcePath(id),
           method: 'DELETE',
           headers: writeHeaders({ ifMatch })
         })
-      )
+      } catch (err) {
+        const status = errorStatus(err)
+        if (status === 412) {
+          throw new WasSyncConflictError()
+        }
+        // The resource is already gone (never pushed, or a delete/delete race):
+        // deleting an absent resource is idempotently satisfied. Report it as
+        // absent so the push handler drops the phantom tombstone instead of
+        // failing the whole batch.
+        if (status === 404) {
+          throw new WasResourceAbsentError()
+        }
+        throw err
+      }
     },
 
     async putMeta({ id, custom, ifMatch, ifNoneMatch }) {
-      await conditionalWrite(() =>
+      const response = await conditionalWrite(() =>
         was.request({
           capability,
           path: `${resourcePath(id)}/meta`,
@@ -177,6 +183,9 @@ export function createWasSyncPort({
           headers: writeHeaders({ ifMatch, ifNoneMatch })
         })
       )
+      // Same contract as `putContent`: the new `metaVersion` from the write
+      // `ETag`, or `undefined` when a cross-origin response hides the header.
+      return parseEtag(response.headers.get('etag'))
     },
 
     async get({ id }): Promise<MasterState | null> {

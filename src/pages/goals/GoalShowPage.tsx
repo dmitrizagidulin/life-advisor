@@ -6,14 +6,7 @@
 import { useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { Link as RouterLink, useParams } from 'react-router'
-import {
-  Box,
-  Button,
-  Link,
-  Stack,
-  TextField,
-  Typography
-} from '@mui/material'
+import { Box, Button, Link, Stack, TextField, Typography } from '@mui/material'
 import { createGoal } from '@/domain/factories'
 import { subGoals } from '@/domain/goals'
 import { goalProjects } from '@/domain/queries'
@@ -22,6 +15,8 @@ import { getDeviceId } from '@/stores/storageManager'
 import { useGoals } from '@/stores/entities/goals'
 import { useProjects } from '@/stores/entities/projects'
 import { ProjectListTable } from '@/components/ProjectListTable'
+import { EntityShowHeader } from '@/components/EntityShowHeader'
+import { NotFound } from '@/components/NotFound'
 
 export function GoalShowPage() {
   const { id } = useParams()
@@ -32,7 +27,7 @@ export function GoalShowPage() {
   const [subName, setSubName] = useState('')
 
   if (!goal) {
-    return <Typography>Goal not found.</Typography>
+    return <NotFound label="Goal" />
   }
 
   const parent =
@@ -59,14 +54,11 @@ export function GoalShowPage() {
 
   return (
     <Box data-testid="goal-show-page">
-      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-        <Button component={RouterLink} to="/goals" size="small">
-          &lt; List
-        </Button>
-        <Button component={RouterLink} to={`/goals/${goal.id}/edit`} size="small">
-          Edit
-        </Button>
-      </Stack>
+      <EntityShowHeader
+        backTo="/goals"
+        backLabel="List"
+        editTo={`/goals/${goal.id}/edit`}
+      />
       <Typography variant="h4">{goal.name}</Typography>
       <Stack spacing={0.5} sx={{ my: 2 }}>
         <Typography>

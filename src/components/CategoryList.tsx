@@ -5,7 +5,8 @@
  * a child link), the Tomorrow-only bulk category moves, and the item rows.
  * `items` arrive already filtered + sorted by the caller.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import {
   Box,
   Button,
@@ -17,10 +18,11 @@ import {
 } from '@mui/material'
 import { createActionItem, createWebLink } from '@/domain/factories'
 import { categoryMove } from '@/domain/actionItems'
+import { bucketByParent } from '@/domain/parent'
 import { getDeviceId } from '@/stores/storageManager'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
-import { ActionItemRow } from './ActionItemRow'
+import { ActionItemRow, EMPTY_WEB_LINKS } from './ActionItemRow'
 import type { ActionItemDoc, Area, MywnCategory } from '@/types/domain'
 
 function isOverThreshold(category: MywnCategory, count: number): boolean {
@@ -42,6 +44,11 @@ export function CategoryList({
   const insertItem = useActionItems((s) => s.insert)
   const updateItem = useActionItems((s) => s.update)
   const insertLink = useWebLinks((s) => s.insert)
+  const allLinks = useWebLinks(useShallow((s) => [...s.byId.values()]))
+  const linksByItem = useMemo(
+    () => bucketByParent(allLinks, 'action_item'),
+    [allLinks]
+  )
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
 
@@ -142,7 +149,11 @@ export function CategoryList({
         <Table size="small">
           <TableBody>
             {items.map((item) => (
-              <ActionItemRow key={item.id} item={item} />
+              <ActionItemRow
+                key={item.id}
+                item={item}
+                links={linksByItem.get(item.id) ?? EMPTY_WEB_LINKS}
+              />
             ))}
           </TableBody>
         </Table>

@@ -49,21 +49,24 @@ export function compareActionItems(a: ActionItemDoc, b: ActionItemDoc): number {
   return cmpStr(b.createdAt, a.createdAt)
 }
 
-/** Projects: bumpCount DESC, then name ASC. */
-export function compareProjects(a: ProjectDoc, b: ProjectDoc): number {
+/** bumpCount DESC, then name ASC. Shared by projects and goals. */
+function compareByBumpThenName(
+  a: { bumpCount: number; name: string },
+  b: { bumpCount: number; name: string }
+): number {
   if (a.bumpCount !== b.bumpCount) {
     return cmpNum(b.bumpCount, a.bumpCount)
   }
   return cmpStr(a.name, b.name)
 }
 
+/** Projects: bumpCount DESC, then name ASC. */
+export const compareProjects: (a: ProjectDoc, b: ProjectDoc) => number =
+  compareByBumpThenName
+
 /** Goals: bumpCount DESC, then name ASC. */
-export function compareGoals(a: GoalDoc, b: GoalDoc): number {
-  if (a.bumpCount !== b.bumpCount) {
-    return cmpNum(b.bumpCount, a.bumpCount)
-  }
-  return cmpStr(a.name, b.name)
-}
+export const compareGoals: (a: GoalDoc, b: GoalDoc) => number =
+  compareByBumpThenName
 
 /** Questions: bumpCount DESC, then createdAt ASC. */
 export function compareQuestions(a: QuestionDoc, b: QuestionDoc): number {

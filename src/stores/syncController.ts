@@ -37,9 +37,6 @@ import { createWasSyncPort } from '@/stores/wasSyncPort'
 import { withFeedMasterRead } from '@/stores/feedMasterPort'
 import { useSyncStatusStore } from '@/stores/syncStatusStore'
 
-/** The subset of an RxJS `Subscription` we hold (rxjs is a transitive dep). */
-type Unsubscribable = { unsubscribe: () => void }
-
 /**
  * Whether a replication error (an RxError wrapping the port's thrown errors)
  * carries an HTTP 401/403 anywhere in its tree -- the storage-access-expired
@@ -85,7 +82,7 @@ export function isAuthError(err: unknown): boolean {
 
 interface CollectionReplication {
   state: RxReplicationState<SyncedDoc, SyncCheckpoint>
-  subscriptions: Unsubscribable[]
+  subscriptions: Array<{ unsubscribe: () => void }>
 }
 
 class SyncController {
@@ -93,6 +90,11 @@ class SyncController {
   private _onlineHandler?: () => void
   private _pollTimer?: ReturnType<typeof setInterval>
   private _started = false
+  // Bumped on every stop(); start() captures it before its first await and
+  // bails if stop() ran in the meantime, so a start() suspended mid-await never
+  // registers the online listener / poll interval into an already-torn-down
+  // controller (which nothing would then clean up).
+  private _generation = 0
 
   /**
    * Starts background replication for every entity collection covered by the
@@ -126,10 +128,16 @@ class SyncController {
       return
     }
     this._started = true
+    const generation = this._generation
     const setStatus = useSyncStatusStore.getState().setStatus
 
     try {
       const { createWasReplication } = await import('@/lib/sync')
+      // A stop() landed while the dynamic import was in flight: abort before
+      // registering any listeners/timers, leaving the controller stopped.
+      if (generation !== this._generation) {
+        return
+      }
       for (const { key, id } of LA_COLLECTIONS) {
         setStatus(id, 'idle')
         // Wrap the verbatim port so the 412 conflict re-read resolves `version`
@@ -154,7 +162,7 @@ class SyncController {
           ...(WAS_SYNC_RETRY_MS !== undefined && { retryTime: WAS_SYNC_RETRY_MS })
         })
 
-        const subscriptions: Unsubscribable[] = [
+        const subscriptions: Array<{ unsubscribe: () => void }> = [
           state.active$.subscribe((active) => {
             setStatus(id, active ? 'syncing' : 'synced')
           }),
@@ -211,6 +219,7 @@ class SyncController {
    * @returns {Promise<void>}
    */
   async stop(): Promise<void> {
+    this._generation++
     if (this._onlineHandler) {
       window.removeEventListener('online', this._onlineHandler)
       this._onlineHandler = undefined

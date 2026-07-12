@@ -11,6 +11,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -21,7 +22,9 @@ const repoRoot = join(here, '..', '..')
 
 export const WAS_PORT = Number(process.env.WAS_E2E_PORT ?? 3102)
 export const WAS_SERVER_URL = `http://localhost:${WAS_PORT}`
-export const WAS_SERVER_DIR = '/Users/dmitriz/code/Interop/was-teaching-server'
+export const WAS_SERVER_DIR =
+  process.env.WAS_SERVER_DIR ??
+  join(homedir(), 'code', 'Interop', 'was-teaching-server')
 
 const HANDLE_KEY = Symbol.for('life-advisor.was-e2e.server')
 

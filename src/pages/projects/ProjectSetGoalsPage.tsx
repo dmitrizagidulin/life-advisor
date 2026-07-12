@@ -18,6 +18,7 @@ import { activeGoals } from '@/domain/queries'
 import { compareGoals } from '@/domain/sort'
 import { useProjects } from '@/stores/entities/projects'
 import { useGoals } from '@/stores/entities/goals'
+import { NotFound } from '@/components/NotFound'
 
 export function ProjectSetGoalsPage() {
   const { id } = useParams()
@@ -26,7 +27,7 @@ export function ProjectSetGoalsPage() {
   const goals = useGoals(useShallow((s) => activeGoals([...s.byId.values()]).sort(compareGoals)))
 
   if (!project) {
-    return <Typography>Project not found.</Typography>
+    return <NotFound label="Project" />
   }
 
   return (

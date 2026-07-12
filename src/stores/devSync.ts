@@ -67,8 +67,3 @@ export async function startDevSync(): Promise<void> {
   const { zcapClient } = await deriveIdentity({ seed: DEV_SEED })
   await startWasSync({ parsed, zcapClient })
 }
-
-/** Test/e2e escape hatch: whether dev-sync has started in this session. */
-export function isDevSyncStarted(): boolean {
-  return started
-}

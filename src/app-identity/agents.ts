@@ -101,6 +101,24 @@ async function hkdfExpand(
 }
 
 /**
+ * Wraps a CapabilityAgent signer in a ZcapClient for signing storage requests,
+ * with the same Ed25519Signature2020 suite on both the invocation and delegation
+ * paths. Shared by the identity derivation here and the dev grant provisioner.
+ *
+ * @param signer {object}   the agent's signer (`CapabilityAgent#getSigner()`)
+ * @returns {ZcapClient}
+ */
+export function zcapClientForSigner(
+  signer: ReturnType<CapabilityAgent['getSigner']>
+): ZcapClient {
+  return new ZcapClient({
+    SuiteClass: Ed25519Signature2020,
+    invocationSigner: signer,
+    delegationSigner: signer
+  })
+}
+
+/**
  * Derives the master identity agents from the master seed. The did:key
  * controller is stable across devices for the same seed.
  *
@@ -118,12 +136,7 @@ export async function deriveIdentity({
     handle: IDENTITY_HANDLE,
     keyName: IDENTITY_KEY_NAME
   })
-  const signer = keyAgent.getSigner()
-  const zcapClient = new ZcapClient({
-    SuiteClass: Ed25519Signature2020,
-    invocationSigner: signer,
-    delegationSigner: signer
-  })
+  const zcapClient = zcapClientForSigner(keyAgent.getSigner())
   return { controllerDid: keyAgent.id, keyAgent, zcapClient }
 }
 

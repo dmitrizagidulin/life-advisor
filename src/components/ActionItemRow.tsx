@@ -21,9 +21,8 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { nowIso } from '@/lib/dates'
 import { MYWN_CATEGORIES } from '@/types/domain'
-import { bump, toggleDone } from '@/domain/actionItems'
+import { bump, setMywnCategory, toggleDone } from '@/domain/actionItems'
 import { forParent } from '@/domain/parent'
 import { nameDisplay } from '@/domain/webLinks'
 import { AREA_COLORS } from '@/themes/theme'
@@ -33,16 +32,34 @@ import {
   convertActionItemToLink,
   deleteActionItemCascade
 } from '@/stores/entityActions'
-import type { ActionItemDoc, MywnCategory } from '@/types/domain'
+import type { ActionItemDoc, MywnCategory, WebLinkDoc } from '@/types/domain'
 
-export function ActionItemRow({ item }: { item: ActionItemDoc }) {
+/** Stable empty slice for managed rows whose item has no child links. */
+export const EMPTY_WEB_LINKS: WebLinkDoc[] = []
+
+export function ActionItemRow({
+  item,
+  links
+}: {
+  item: ActionItemDoc
+  /**
+   * The item's child web-links. List containers that render many rows subscribe
+   * to the web-links store once and bucket by parent, then pass each row its
+   * slice, so no row runs a per-row filter+sort. Omit only for a lone row with
+   * no such container (it then subscribes for its own links).
+   */
+  links?: WebLinkDoc[]
+}) {
   const update = useActionItems((s) => s.update)
-  const links = useWebLinks(useShallow((s) =>
-    forParent([...s.byId.values()], 'action_item', item.id)
+  const ownLinks = useWebLinks(useShallow((s) =>
+    links === undefined
+      ? forParent([...s.byId.values()], 'action_item', item.id)
+      : EMPTY_WEB_LINKS
   ))
+  const childLinks = links ?? ownLinks
 
   function setCategory(category: MywnCategory) {
-    void update({ ...item, mywnCategory: category, updatedAt: nowIso() })
+    void update(setMywnCategory(item, category))
   }
 
   return (
@@ -76,9 +93,9 @@ export function ActionItemRow({ item }: { item: ActionItemDoc }) {
             {item.name}
           </Link>
         </Stack>
-        {links.length > 0 && (
+        {childLinks.length > 0 && (
           <Box component="ul" sx={{ m: 0, pl: 3 }}>
-            {links.map((link) => (
+            {childLinks.map((link) => (
               <li key={link.id}>
                 <Link href={link.url} target="_blank" rel="noreferrer">
                   {nameDisplay(link)}
@@ -133,7 +150,7 @@ export function ActionItemRow({ item }: { item: ActionItemDoc }) {
           >
             <EditIcon fontSize="small" />
           </IconButton>
-          {links.length > 0 && (
+          {childLinks.length > 0 && (
             <Button
               size="small"
               onClick={() => void convertActionItemToLink(item)}

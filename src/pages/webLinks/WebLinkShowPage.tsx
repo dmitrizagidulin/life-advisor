@@ -1,33 +1,28 @@
 /**
  * Web link detail (ports `web_links#show`): the link target and its metadata.
  */
-import { Link as RouterLink, useParams } from 'react-router'
-import { Box, Button, Link, Stack, Typography } from '@mui/material'
+import { useParams } from 'react-router'
+import { Box, Link, Typography } from '@mui/material'
 import { nameDisplay } from '@/domain/webLinks'
 import { useWebLinks } from '@/stores/entities/webLinks'
+import { EntityShowHeader } from '@/components/EntityShowHeader'
+import { NotFound } from '@/components/NotFound'
 
 export function WebLinkShowPage() {
   const { id } = useParams()
   const link = useWebLinks((s) => (id ? s.byId.get(id) : undefined))
 
   if (!link) {
-    return <Typography>Web link not found.</Typography>
+    return <NotFound label="Web link" />
   }
 
   return (
     <Box data-testid="web-link-show-page">
-      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-        <Button component={RouterLink} to="/web-links" size="small">
-          &lt; Web Links
-        </Button>
-        <Button
-          component={RouterLink}
-          to={`/web-links/${link.id}/edit`}
-          size="small"
-        >
-          Edit
-        </Button>
-      </Stack>
+      <EntityShowHeader
+        backTo="/web-links"
+        backLabel="Web Links"
+        editTo={`/web-links/${link.id}/edit`}
+      />
       <Typography variant="h5">{nameDisplay(link)}</Typography>
       {link.url && (
         <Typography sx={{ mt: 1 }}>

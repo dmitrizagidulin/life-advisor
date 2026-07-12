@@ -4,7 +4,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   activeGoals,
-  activeProjects,
   allCompleted,
   allForStatus,
   allTodo,
@@ -68,12 +67,13 @@ describe('project status selectors', () => {
     proj({ name: 'active2', status: 'active', area: 'soul' })
   ]
 
-  it('allForStatus and activeProjects', () => {
+  it('allForStatus', () => {
     expect(allForStatus(projects, 'idea').map((p) => p.name)).toEqual(['idea'])
-    expect(activeProjects(projects).map((p) => p.name).sort()).toEqual([
-      'active1',
-      'active2'
-    ])
+    expect(
+      allForStatus(projects, 'active')
+        .map((p) => p.name)
+        .sort()
+    ).toEqual(['active1', 'active2'])
   })
 
   it('focusOnArea matches status and exact area', () => {

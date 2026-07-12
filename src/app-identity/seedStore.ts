@@ -114,3 +114,18 @@ export async function clearSeedStore({
     idb
   )
 }
+
+/**
+ * Wipes only the session record, keeping the persisted seed. Used when the
+ * grants expire but the seed must survive (a reconnect renews the grants
+ * against the same seed-derived controller DID, so data stays readable).
+ */
+export async function clearSessionRecord({
+  idb
+}: { idb?: IDBFactory } = {}): Promise<void> {
+  await withSessionStore(
+    'readwrite',
+    (store) => store.delete(SESSION_RECORD),
+    idb
+  )
+}

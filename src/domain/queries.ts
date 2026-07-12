@@ -62,11 +62,6 @@ export function allForStatus(
   return projects.filter((p) => p.status === status)
 }
 
-/** Active projects (`active_projects`). */
-export function activeProjects(projects: ProjectDoc[]): ProjectDoc[] {
-  return allForStatus(projects, 'active')
-}
-
 /**
  * Projects in an area at a status (`focus_on_area`). Exact area match -- the
  * `admin`/`assistant` quirk does not apply here.

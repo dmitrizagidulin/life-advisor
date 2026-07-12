@@ -20,6 +20,7 @@ import type { IZcap } from '@interop/data-integrity-core'
 import { WasClient } from '@interop/was-client'
 import { createEdvEncryption } from '@interop/was-client/edv'
 import type { ParsedGrants } from '@/stores/grants'
+import { httpStatusOf } from '@/stores/httpStatus'
 
 /** The outcome of a best-effort encryption-marker PUT, for diagnostics. */
 export interface MarkerResult {
@@ -110,9 +111,7 @@ export class WasRemoteStore {
       })
       return { collectionId, ok: true, status: response.status }
     } catch (err) {
-      const status =
-        (err as { status?: number }).status ??
-        (err as { response?: { status?: number } }).response?.status
+      const status = httpStatusOf(err)
       const message = err instanceof Error ? err.message : String(err)
       return { collectionId, ok: false, status, error: message }
     }

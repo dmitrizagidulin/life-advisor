@@ -58,7 +58,7 @@ export const WAS_SYNC_POLL_MS: number = env.VITE_WAS_SYNC_POLL_MS
  * deliberately unprefixed, generic name shared across interoperable apps). All
  * are EDV-encrypted client-side. `current-focus` is a singleton.
  */
-export const LA_COLLECTIONS: Array<{ key: string; id: string }> = [
+export const LA_COLLECTIONS = [
   { key: 'actionItems', id: 'action-items' },
   { key: 'projects', id: 'projects' },
   { key: 'goals', id: 'goals' },
@@ -67,9 +67,15 @@ export const LA_COLLECTIONS: Array<{ key: string; id: string }> = [
   { key: 'webLinks', id: 'web-links' },
   { key: 'thoughts', id: 'thoughts' },
   { key: 'currentFocus', id: 'current-focus' }
-]
+] as const
+
+/** A localStore/RxDB collection handle (camelCase logical key). */
+export type CollectionKey = (typeof LA_COLLECTIONS)[number]['key']
+
+/** A WAS collection id (the deliberately unprefixed, cross-app name). */
+export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
 
 /** Resolve a localStore/RxDB collection key from its WAS collection id. */
-export function collectionKeyForId(id: string): string | undefined {
+export function collectionKeyForId(id: string): CollectionKey | undefined {
   return LA_COLLECTIONS.find((entry) => entry.id === id)?.key
 }
