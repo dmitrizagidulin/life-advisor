@@ -9,7 +9,7 @@ import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { Box, Button, Stack, Typography } from '@mui/material'
 import type { StoreApi, UseBoundStore } from 'zustand'
-import type { EntityStore } from '@/stores/entities/createEntityStore'
+import type { EntityStore } from '@interop/was-react'
 
 /** Router + store wiring shared by every entity form page. */
 export function useEntityForm<T extends { id: string }>(
@@ -18,10 +18,16 @@ export function useEntityForm<T extends { id: string }>(
 ) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const existing = useStore((s) => (id ? s.byId.get(id) : undefined))
-  const insert = useStore((s) => s.insert)
-  const update = useStore((s) => s.update)
-  return { existing, insert, update, navigate, notFound: mode === 'edit' && !existing }
+  const existing = useStore(s => (id ? s.byId.get(id) : undefined))
+  const insert = useStore(s => s.insert)
+  const update = useStore(s => s.update)
+  return {
+    existing,
+    insert,
+    update,
+    navigate,
+    notFound: mode === 'edit' && !existing
+  }
 }
 
 /**

@@ -2,8 +2,8 @@
  * Login-With-Wallet e2e against a real local freewallet + was-teaching-server.
  *
  * CHAPI has no mediator here; two injection seams stand in for it:
- * - App side: `window.__LA_E2E_CHAPI__` switches `src/auth/chapi.ts` to a
- *   request queue (`__LA_CHAPI_REQUESTS__` / `__LA_CHAPI_RESPONSES__`) this
+ * - App side: `window.__WAS_REACT_E2E_CHAPI__` switches the library's CHAPI layer to a
+ *   request queue (`__WAS_REACT_E2E_CHAPI_REQUESTS__` / `__WAS_REACT_E2E_CHAPI_RESPONSES__`) this
  *   spec services.
  * - Wallet side: freewallet's own non-production `__E2E_CHAPI_GET_EVENT__`
  *   seam drives its /#/wallet/get popup with the app's captured VPR; the
@@ -82,7 +82,7 @@ async function driveWalletGet(
 ): Promise<unknown> {
   const page = await context.newPage()
   await page.addInitScript(
-    (cfg) => {
+    cfg => {
       const win = window as unknown as {
         __E2E_CHAPI_GET_EVENT__?: unknown
         __E2E_CHAPI_RESPONSE__?: { value: unknown }
@@ -94,7 +94,7 @@ async function driveWalletGet(
           web: { VerifiablePresentation: cfg.vpr }
         },
         respondWith(promise: Promise<unknown>) {
-          void Promise.resolve(promise).then((value) => {
+          void Promise.resolve(promise).then(value => {
             win.__E2E_CHAPI_RESPONSE__ = { value: value ?? null }
           })
         }
@@ -168,8 +168,9 @@ interface ChapiBridgeRequest {
 /** Arms the app-side CHAPI bridge (must run before the page loads). */
 async function armChapiBridge(page: Page) {
   await page.addInitScript(() => {
-    ;(window as unknown as { __LA_E2E_CHAPI__?: boolean }).__LA_E2E_CHAPI__ =
-      true
+    ;(
+      window as unknown as { __WAS_REACT_E2E_CHAPI__?: boolean }
+    ).__WAS_REACT_E2E_CHAPI__ = true
   })
 }
 
@@ -183,9 +184,9 @@ async function popChapiRequest(page: Page): Promise<ChapiBridgeRequest> {
           () =>
             (
               window as unknown as {
-                __LA_CHAPI_REQUESTS__?: ChapiBridgeRequest[]
+                __WAS_REACT_E2E_CHAPI_REQUESTS__?: ChapiBridgeRequest[]
               }
-            ).__LA_CHAPI_REQUESTS__?.shift() ?? null
+            ).__WAS_REACT_E2E_CHAPI_REQUESTS__?.shift() ?? null
         )
         return request
       },
@@ -200,10 +201,11 @@ async function respondChapi(page: Page, id: number, value: unknown) {
   await page.evaluate(
     ([responseId, responseValue]) => {
       const win = window as unknown as {
-        __LA_CHAPI_RESPONSES__?: Record<number, unknown>
+        __WAS_REACT_E2E_CHAPI_RESPONSES__?: Record<number, unknown>
       }
-      win.__LA_CHAPI_RESPONSES__ ??= {}
-      win.__LA_CHAPI_RESPONSES__[responseId as number] = responseValue
+      win.__WAS_REACT_E2E_CHAPI_RESPONSES__ ??= {}
+      win.__WAS_REACT_E2E_CHAPI_RESPONSES__[responseId as number] =
+        responseValue
     },
     [id, value] as const
   )
@@ -261,7 +263,7 @@ async function patchSessionRecord(
   patch: Record<string, unknown>
 ): Promise<void> {
   await page.evaluate(
-    (recordPatch) =>
+    recordPatch =>
       new Promise<void>((resolve, reject) => {
         const open = indexedDB.open('life-advisor-session', 1)
         open.onsuccess = () => {
@@ -294,8 +296,8 @@ async function wipeAppDatabases(page: Page): Promise<string[]> {
     const names: string[] = []
     await Promise.all(
       dbs.map(
-        (db) =>
-          new Promise<void>((resolve) => {
+        db =>
+          new Promise<void>(resolve => {
             if (!db.name) {
               return resolve()
             }
@@ -359,7 +361,7 @@ async function loginFromAppPage(
     query: Array<{ type: string; capabilityQuery?: unknown[] }>
   }
   const zcapQuery = grantsVpr.query.find(
-    (q) => q.type === 'AuthorizationCapabilityQuery'
+    q => q.type === 'AuthorizationCapabilityQuery'
   )
   expect(zcapQuery?.capabilityQuery).toHaveLength(COLLECTION_IDS.length + 1)
   const grantsResponse = await driveWalletGet(walletContext, {
@@ -433,7 +435,7 @@ test('login with wallet: first login, replication, logout/login, cleared-storage
   for (const collectionId of COLLECTION_IDS) {
     expect(
       record!.grants.some(
-        (grant) => grant.invocationTarget === `${spacePrefix}/${collectionId}`
+        grant => grant.invocationTarget === `${spacePrefix}/${collectionId}`
       )
     ).toBe(true)
   }
@@ -474,13 +476,14 @@ test('login with wallet: first login, replication, logout/login, cleared-storage
   /* Phase 5: cleared-storage recovery. Wipe EVERY app-origin database (seed,
      session, encrypted envelopes); the wallet still holds the key credential
      and WAS holds the envelopes, so a returning login recovers both. */
-  await appPage.evaluate(() =>
-    new Promise<void>((resolve) => {
-      const request = indexedDB.deleteDatabase('life-advisor-session')
-      request.onsuccess = () => resolve()
-      request.onerror = () => resolve()
-      request.onblocked = () => resolve()
-    })
+  await appPage.evaluate(
+    () =>
+      new Promise<void>(resolve => {
+        const request = indexedDB.deleteDatabase('life-advisor-session')
+        request.onsuccess = () => resolve()
+        request.onerror = () => resolve()
+        request.onblocked = () => resolve()
+      })
   )
   await appPage.reload()
   // With no session the app parks on /login and holds no RxDB connections;

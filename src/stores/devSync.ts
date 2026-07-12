@@ -7,13 +7,20 @@
  * `scripts/provision-dev-grants.ts` against a running was-teaching-server.
  *
  * Reactive patching: pulled remote changes re-hydrate the affected zustand
- * store (debounced to coalesce a burst) via the shared {@link startWasSync}.
+ * store (debounced to coalesce a burst) via the shared `startWasSync`.
  */
-import type { IZcap } from '@interop/data-integrity-core'
-import { WAS_DEV_GRANTS_URL } from '@/app.config'
-import { DEV_SEED, deriveIdentity } from '@/app-identity/agents'
-import { parseGrants } from '@/stores/grants'
-import { startWasSync } from '@/stores/wasSync'
+import {
+  deriveIdentity,
+  parseGrants,
+  createSyncController,
+  startWasSync,
+  requireStore,
+  patchFromChange,
+  type IZcap
+} from '@interop/was-react'
+import { WAS_APP_CONFIG, WAS_DEV_GRANTS_URL } from '@/app.config'
+import { DEV_SEED } from '@/stores/devSeed'
+import { COLLECTION_REGISTRY } from '@/stores/collectionRegistry'
 
 /**
  * Fetches and parses the dev grants file. Returns `null` (with a warning) when
@@ -65,5 +72,16 @@ export async function startDevSync(): Promise<void> {
 
   const parsed = parseGrants(grants)
   const { zcapClient } = await deriveIdentity({ seed: DEV_SEED })
-  await startWasSync({ parsed, zcapClient })
+  const syncController = createSyncController({
+    collections: WAS_APP_CONFIG.collections,
+    ...(WAS_APP_CONFIG.sync && { sync: WAS_APP_CONFIG.sync })
+  })
+  await startWasSync({
+    parsed,
+    zcapClient,
+    localStore: requireStore(),
+    syncController,
+    onRemoteChange: (key, event) =>
+      void patchFromChange(COLLECTION_REGISTRY, key, event)
+  })
 }

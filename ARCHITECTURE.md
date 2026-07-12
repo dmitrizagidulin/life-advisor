@@ -61,12 +61,12 @@ another app one collection's key exposes nothing about the master seed or the
 sibling collections, and no re-encryption migration is needed to start sharing.
 **Never encrypt two collections with the same KAK.**
 
-A subtlety worth pinning: the pinned convention (see `src/app-identity/agents.ts`)
-is `CapabilityAgent.fromSeed({seed})` on the RAW 32 bytes, for both the master
-identity and the per-collection KAKs -- never `fromSecret`, which salt-hashes a
-STRING and would derive a different key for a byte array vs its text form. This
-convention is part of the shared-key contract: a mismatch silently derives
-different DIDs and KAKs for different consumers.
+A subtlety worth pinning: the pinned convention (owned by `@interop/was-react`'s
+identity layer) is `CapabilityAgent.fromSeed({seed})` on the RAW 32 bytes, for
+both the master identity and the per-collection KAKs -- never `fromSecret`,
+which salt-hashes a STRING and would derive a different key for a byte array vs
+its text form. This convention is part of the shared-key contract: a mismatch
+silently derives different DIDs and KAKs for different consumers.
 
 ## Authentication: Login With Wallet (CHAPI)
 
@@ -321,25 +321,26 @@ history documents.
 
 ## Module layout
 
+The identity, auth, storage, sync, and session plumbing lives in
+`@interop/was-react` (the library extracted from this app); the app supplies a
+`WasAppConfig` plus a collection-to-store registry and owns only the domain
+layer and UI.
+
 ```
 src/
-  app.config.ts        WAS host, app origin, collection registry
-  main.tsx / App.tsx   HashRouter + lazy routes
+  app.config.ts        WAS host, app origin, collection registry, and the
+                       assembled WasAppConfig handed to @interop/was-react
+  main.tsx / App.tsx   WasSessionProvider + HashRouter + lazy routes
   types/domain.ts      entity payload interfaces + enums
-  app-identity/        RP identity from the wallet-stored seed:
-                       seed credential issue/parse/verify, seed persistence,
-                       agent + KAK derivation, session bootstrap
-  auth/                RP side of Login With Wallet: CHAPI wrappers, VPR
-                       construction, response verification, login orchestration
-  session/             persist and restore the session record
-  stores/              zustand + RxDB layer: auth store, document cipher,
-                       generic local envelope store, delegated WAS remote store,
-                       sync controller, per-entity entity stores
+  stores/              the app-side storage glue: the collection-to-store
+                       registry, per-entity zustand stores over the library's
+                       createEntityStore, cross-store entity actions, export,
+                       and the dev-mode bootstrap / dev-sync harness
   domain/              pure, unit-tested domain logic (sort, actionItems,
                        projects, goals, questions, webLinks, focus, history,
-                       parent, queries, lww, factories)
-  lib/                 dates (local YYYY-MM-DD day keys, ISO helpers), sync
-                       adapter, content-id helpers, data export
+                       parent, queries, factories)
+  lib/                 dates (local YYYY-MM-DD day keys, ISO helpers), data
+                       export
   pages/ components/ themes/   UI
 ```
 

@@ -12,9 +12,12 @@
  * than being forced into the generic mold.
  */
 import type { UseBoundStore, StoreApi } from 'zustand'
-import { remotePayloadWins } from '@/domain/lww'
+import {
+  remotePayloadWins,
+  type EntityStore,
+  type StoreRegistryEntry
+} from '@interop/was-react'
 import type { CollectionKey } from '@/app.config'
-import type { EntityStore } from '@/stores/entities/createEntityStore'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useProjects } from '@/stores/entities/projects'
 import { useGoals } from '@/stores/entities/goals'
@@ -27,20 +30,13 @@ import type { ExportDoc, ExportValue } from '@/lib/exportData'
 import type { CurrentFocusDoc } from '@/types/domain'
 
 /**
- * The per-collection operations shared by hydrate/patch/clear/export. `upsert`
- * and `drop` apply an already-decrypted payload (no persist -- the synced row
- * exists); `collect` reads the live docs for export (an array for list stores,
- * `null`/one doc for the singleton).
+ * The per-collection operations shared by hydrate/patch/clear/export: the
+ * library's `StoreRegistryEntry` contract (hydrate/upsert/drop/clear, driven
+ * by the session and sync layers) plus the app's own `collect` verb, which
+ * reads the live docs for export (an array for list stores, `null`/one doc for
+ * the singleton).
  */
-export interface CollectionEntry {
-  /** Decrypt every live row of the collection into its store. */
-  hydrate: () => Promise<void>
-  /** Empty the store (logout). */
-  clear: () => void
-  /** Apply one decrypted remote payload (INSERT/UPDATE), last-write-wins. */
-  upsert: (doc: { id: string }) => void
-  /** Drop one doc by logical uuid (DELETE / tombstone). */
-  drop: (uuid: string) => void
+export interface CollectionEntry extends StoreRegistryEntry {
   /** Read the live docs for export. */
   collect: () => ExportValue
 }
@@ -56,8 +52,8 @@ function listEntry<T extends ExportDoc>(
   return {
     hydrate: () => store.getState().hydrate(),
     clear: () => store.getState().replaceAll([]),
-    upsert: (doc) => store.getState().patch(doc as T),
-    drop: (uuid) => store.getState().drop(uuid),
+    upsert: doc => store.getState().patch(doc as T),
+    drop: uuid => store.getState().drop(uuid),
     collect: () => [...store.getState().byId.values()]
   }
 }
@@ -66,8 +62,8 @@ function listEntry<T extends ExportDoc>(
 const focusEntry: CollectionEntry = {
   hydrate: () => useFocus.getState().hydrate(),
   clear: () => useFocus.setState({ doc: null }),
-  upsert: (doc) =>
-    useFocus.setState((state) => {
+  upsert: doc =>
+    useFocus.setState(state => {
       // Same LWW guard as the list stores' `patch`: an out-of-order or stale
       // remote singleton must not clobber a newer held doc.
       const incoming = doc as CurrentFocusDoc
@@ -98,5 +94,7 @@ export const COLLECTION_REGISTRY: Record<CollectionKey, CollectionEntry> = {
 
 /** Looks up the entry for a (possibly unknown) collection key from the sync layer. */
 export function collectionEntry(key: string): CollectionEntry | undefined {
-  return (COLLECTION_REGISTRY as Record<string, CollectionEntry | undefined>)[key]
+  return (COLLECTION_REGISTRY as Record<string, CollectionEntry | undefined>)[
+    key
+  ]
 }

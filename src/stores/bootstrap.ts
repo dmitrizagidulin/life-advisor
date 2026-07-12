@@ -1,35 +1,23 @@
 /**
  * Dev-mode bootstrap: opens the one encrypted {@link LocalStore} from the dev
- * seed and hydrates all eight entity stores from it, then flips an `appReady`
- * flag the router's gate (`ProtectedRoute`) waits on. Idempotent -- concurrent
- * callers share one in-flight promise.
+ * seed and hydrates all eight entity stores from it, then flips the library's
+ * `useAppReady` flag the router's gate (`ProtectedRoute`) waits on. Idempotent
+ * -- concurrent callers share one in-flight promise.
  *
- * Wallet mode does not use `initApp`; there the authStore owns the open/hydrate
- * ordering (seed from the wallet session) and reuses the same `useAppReady`
- * gate and {@link hydrateAll}.
+ * Wallet mode does not use `initApp`; there the library's auth store owns the
+ * open/hydrate ordering (seed from the wallet session) and the same
+ * `useAppReady` gate.
  */
-import { create } from 'zustand'
-import { WAS_DEV_SYNC } from '@/app.config'
-import { DEV_SEED } from '@/app-identity/agents'
-import { LocalStore } from '@/stores/localStore'
-import { setLocalStore, hasStore } from '@/stores/storageManager'
-import { hydrateAll } from '@/stores/rehydrate'
-
-interface AppReadyState {
-  ready: boolean
-  error: string | null
-  setReady: () => void
-  setError: (message: string) => void
-  reset: () => void
-}
-
-export const useAppReady = create<AppReadyState>((set) => ({
-  ready: false,
-  error: null,
-  setReady: () => set({ ready: true, error: null }),
-  setError: (message) => set({ error: message }),
-  reset: () => set({ ready: false, error: null })
-}))
+import {
+  LocalStore,
+  setLocalStore,
+  hasStore,
+  hydrateAll,
+  useAppReady
+} from '@interop/was-react'
+import { WAS_APP_CONFIG, WAS_DEV_SYNC } from '@/app.config'
+import { DEV_SEED } from '@/stores/devSeed'
+import { COLLECTION_REGISTRY } from '@/stores/collectionRegistry'
 
 let inFlight: Promise<void> | null = null
 
@@ -41,10 +29,14 @@ export function initApp(): Promise<void> {
   inFlight = (async () => {
     try {
       if (!hasStore()) {
-        const store = await LocalStore.init({ seed: DEV_SEED })
+        const store = await LocalStore.init({
+          seed: DEV_SEED,
+          collections: WAS_APP_CONFIG.collections,
+          dbName: WAS_APP_CONFIG.dbName
+        })
         setLocalStore(store)
       }
-      await hydrateAll()
+      await hydrateAll(COLLECTION_REGISTRY)
       useAppReady.getState().setReady()
       // Dev-sync: start WAS replication in the background AFTER the UI gate
       // opens, so a missing/unreachable server never blocks first paint. The
@@ -53,7 +45,7 @@ export function initApp(): Promise<void> {
       if (WAS_DEV_SYNC) {
         void import('@/stores/devSync')
           .then(({ startDevSync }) => startDevSync())
-          .catch((err) => console.warn('Dev-sync failed to start:', err))
+          .catch(err => console.warn('Dev-sync failed to start:', err))
       }
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : String(cause)

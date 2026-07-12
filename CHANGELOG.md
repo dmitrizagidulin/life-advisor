@@ -45,3 +45,17 @@ storage space.
   prompt. An export action downloads every decrypted collection as a single JSON
   file. A Content-Security-Policy restricts script, connection, and frame origins
   to shrink the cross-site-scripting attack surface.
+
+### Changed
+
+- Replaced the app's own identity, auth, storage, sync, and session plumbing
+  with `@interop/was-react` (the library extracted from this app). The app now
+  supplies a single `WasAppConfig` (pinning the pre-library credential type,
+  database names, and deviceId key so existing identities and stored data carry
+  over unchanged) and a collection-to-store registry, wraps the route tree in
+  `WasSessionProvider`, and consumes the library's hooks and MUI components
+  (`ReconnectBanner`, `SyncStatusChip`). The dev-mode bootstrap, dev-sync
+  harness, and grant-provisioning script now drive the library's primitives.
+  This also picks up the library's conflict-handling fixes (metadata-only
+  conflict comparison, changes-feed scan-budget handling) and session
+  teardown/race fixes.
