@@ -26,10 +26,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WasClient, type ActionInput } from '@interop/was-client'
 import type { IDelegatedZcap } from '@interop/data-integrity-core'
-import { ZcapClient } from '@interop/ezcap'
-import { Ed25519Signature2020 } from '@interop/ed25519-signature'
 import { CapabilityAgent } from '@interop/webkms-client'
-import { deriveIdentity, DEV_SEED } from '../src/app-identity/agents.ts'
+import {
+  deriveIdentity,
+  zcapClientForSigner,
+  DEV_SEED
+} from '../src/app-identity/agents.ts'
+import { httpStatusOf } from '../src/stores/httpStatus.ts'
 import { LA_COLLECTIONS } from '../src/app.config.ts'
 
 const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:3002'
@@ -59,12 +62,7 @@ async function provisionerClient(): Promise<{ was: WasClient; did: string }> {
     handle: 'la-provisioner',
     keyName: 'provisioner-key'
   })
-  const signer = agent.getSigner()
-  const zcapClient = new ZcapClient({
-    SuiteClass: Ed25519Signature2020,
-    invocationSigner: signer,
-    delegationSigner: signer
-  })
+  const zcapClient = zcapClientForSigner(agent.getSigner())
   return { was: new WasClient({ serverUrl: SERVER_URL, zcapClient }), did: agent.id }
 }
 
@@ -133,9 +131,7 @@ async function main(): Promise<void> {
     })
     console.log(`  AUTHORIZED -- server responded ${response.status}`)
   } catch (err) {
-    const status =
-      (err as { status?: number }).status ??
-      (err as { response?: { status?: number } }).response?.status
+    const status = httpStatusOf(err)
     const data = (err as { data?: unknown }).data
     console.log(`  NOT AUTHORIZED -- status ${status ?? 'n/a'}`)
     if (data !== undefined) {

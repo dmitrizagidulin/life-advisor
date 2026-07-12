@@ -3,6 +3,7 @@
  * counts, next action, status-machine buttons, elapsed hours, bump and delete.
  * Reused by the projects index and the completed/canceled status lists.
  */
+import { useMemo } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -18,17 +19,37 @@ import {
   Typography
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
-import { changeStatus, nextAction, timeElapsed } from '@/domain/projects'
-import { nowIso } from '@/lib/dates'
+import { bump, changeStatus, nextAction, timeElapsed } from '@/domain/projects'
 import { useProjects } from '@/stores/entities/projects'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { AREA_COLORS } from '@/themes/theme'
-import type { ProjectDoc } from '@/types/domain'
+import type { ActionItemDoc, ProjectDoc } from '@/types/domain'
+
+/** Stable empty slice for a project with no action items. */
+const NO_ITEMS: ActionItemDoc[] = []
 
 export function ProjectListTable({ projects }: { projects: ProjectDoc[] }) {
   const update = useProjects((s) => s.update)
   const remove = useProjects((s) => s.remove)
   const allItems = useActionItems(useShallow((s) => [...s.byId.values()]))
+
+  // Bucket every project's action items once (O(N)) so each row derives its
+  // items and next action from its slice, not from a per-project rescan.
+  const itemsByProject = useMemo(() => {
+    const buckets = new Map<string, ActionItemDoc[]>()
+    for (const item of allItems) {
+      if (item.parentType !== 'project' || item.parentKey == null) {
+        continue
+      }
+      const bucket = buckets.get(item.parentKey)
+      if (bucket) {
+        bucket.push(item)
+      } else {
+        buckets.set(item.parentKey, [item])
+      }
+    }
+    return buckets
+  }, [allItems])
 
   if (projects.length === 0) {
     return (
@@ -52,11 +73,10 @@ export function ProjectListTable({ projects }: { projects: ProjectDoc[] }) {
       </TableHead>
       <TableBody>
         {projects.map((project) => {
-          const items = allItems.filter(
-            (i) => i.parentType === 'project' && i.parentKey === project.id
-          )
+          const items = itemsByProject.get(project.id) ?? NO_ITEMS
           const done = items.filter((i) => i.done).length
-          const next = nextAction(project, allItems)
+          const next = nextAction(project, items)
+          const elapsed = timeElapsed(items)
           return (
             <TableRow key={project.id} data-testid="project-row" data-project-name={project.name}>
               <TableCell>
@@ -89,7 +109,7 @@ export function ProjectListTable({ projects }: { projects: ProjectDoc[] }) {
                 </Button>
               </TableCell>
               <TableCell>
-                {timeElapsed(items) > 0 ? `${timeElapsed(items)} h` : ''}
+                {elapsed > 0 ? `${elapsed} h` : ''}
               </TableCell>
               <TableCell>{project.bumpCount > 0 ? project.bumpCount : ''}</TableCell>
               <TableCell align="right">
@@ -97,13 +117,7 @@ export function ProjectListTable({ projects }: { projects: ProjectDoc[] }) {
                   <Button
                     size="small"
                     variant="outlined"
-                    onClick={() =>
-                      void update({
-                        ...project,
-                        bumpCount: project.bumpCount + 1,
-                        updatedAt: nowIso()
-                      })
-                    }
+                    onClick={() => void update(bump(project))}
                     data-testid="bump-project"
                   >
                     Bump!

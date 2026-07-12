@@ -52,6 +52,27 @@ describe('createProject defaults', () => {
       goalIds: []
     })
   })
+
+  it('created with completed status stamps completedAt and clears canceledAt', () => {
+    const p = createProject({ name: 'p', status: 'completed', deviceId: D }, NOW)
+    expect(p.status).toBe('completed')
+    expect(p.completedAt).toBe(NOW)
+    expect(p.canceledAt).toBe(null)
+  })
+
+  it('created with canceled status stamps canceledAt and clears completedAt', () => {
+    const p = createProject({ name: 'p', status: 'canceled', deviceId: D }, NOW)
+    expect(p.status).toBe('canceled')
+    expect(p.canceledAt).toBe(NOW)
+    expect(p.completedAt).toBe(null)
+  })
+
+  it('created with active status leaves both timestamps null', () => {
+    const p = createProject({ name: 'p', status: 'active', deviceId: D }, NOW)
+    expect(p.status).toBe('active')
+    expect(p.completedAt).toBe(null)
+    expect(p.canceledAt).toBe(null)
+  })
 })
 
 describe('createGoal defaults', () => {

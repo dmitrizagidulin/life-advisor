@@ -7,6 +7,7 @@ import { describe, it, expect } from 'vitest'
 import type { WithDeleted } from 'rxdb/plugins/core'
 import { createPushHandler, formatEtag } from './pushWrites'
 import {
+  WasResourceAbsentError,
   WasSyncConflictError,
   type MasterState,
   type SyncedDoc,
@@ -37,7 +38,12 @@ type WriteCall =
 function fakePushPort(
   options: {
     conflictOn?: { kind: WriteCall['kind']; id: string }
+    absentOnDelete?: string
     master?: MasterState | null
+    /** Version the fake `putContent` reports (an exposed write `ETag`). */
+    reportContentVersion?: number
+    /** Version the fake `putMeta` reports (an exposed write `ETag`). */
+    reportMetaVersion?: number
   } = {}
 ): WasSyncPort & { writes: WriteCall[]; getCalls: string[] } {
   const writes: WriteCall[] = []
@@ -56,14 +62,19 @@ function fakePushPort(
     async putContent({ id, data, ifMatch, ifNoneMatch }) {
       writes.push({ kind: 'putContent', id, data, ifMatch, ifNoneMatch })
       maybeConflict('putContent', id)
+      return options.reportContentVersion
     },
     async deleteContent({ id, ifMatch }) {
       writes.push({ kind: 'deleteContent', id, ifMatch })
+      if (options.absentOnDelete === id) {
+        throw new WasResourceAbsentError()
+      }
       maybeConflict('deleteContent', id)
     },
     async putMeta({ id, custom, ifMatch, ifNoneMatch }) {
       writes.push({ kind: 'putMeta', id, custom, ifMatch, ifNoneMatch })
       maybeConflict('putMeta', id)
+      return options.reportMetaVersion
     },
     async get({ id }) {
       getCalls.push(id)
@@ -91,7 +102,10 @@ describe('createPushHandler routing', () => {
       { newDocumentState: newDoc({ id: 'r1', data: { a: 1 } }) }
     ])
 
-    expect(conflicts).toEqual([])
+    // The successful create reports its post-write master (version bumped to 1).
+    expect(conflicts).toEqual([
+      { id: 'r1', updatedAt: '2026-01-01T00:00:00Z', version: 1, data: { a: 1 }, _deleted: false }
+    ])
     expect(port.writes).toEqual([
       { kind: 'putContent', id: 'r1', data: { a: 1 }, ifNoneMatch: true }
     ])
@@ -303,6 +317,22 @@ describe('createPushHandler conflicts', () => {
     })
   })
 
+  it('treats a 404-absent delete as a terminal no-op (never-pushed row)', async () => {
+    const port = fakePushPort({ absentOnDelete: 'r1' })
+    const push = createPushHandler(port)
+
+    // A row created and deleted locally before any push: DELETE with no
+    // If-Match hits a resource the server never saw, so it reports absent.
+    const conflicts = await push([
+      { newDocumentState: newDoc({ id: 'r1', _deleted: true }) }
+    ])
+
+    // Swallowed as success: no conflict, no re-read, nothing to wedge the queue.
+    expect(conflicts).toEqual([])
+    expect(port.getCalls).toEqual([])
+    expect(port.writes).toEqual([{ kind: 'deleteContent', id: 'r1' }])
+  })
+
   it('propagates a non-conflict error so RxDB retries the batch', async () => {
     const port: WasSyncPort = {
       async query() {
@@ -324,7 +354,7 @@ describe('createPushHandler conflicts', () => {
     ).rejects.toThrow('network down')
   })
 
-  it('processes multiple rows and returns only the conflicting ones', async () => {
+  it('reports the successful row and the genuine conflict distinctly', async () => {
     const port = fakePushPort({
       conflictOn: { kind: 'putContent', id: 'bad' },
       master: {
@@ -341,7 +371,152 @@ describe('createPushHandler conflicts', () => {
       { newDocumentState: newDoc({ id: 'bad', data: { a: 2 } }) }
     ])
 
-    expect(conflicts).toHaveLength(1)
-    expect(conflicts[0]!.id).toBe('bad')
+    // Both rows report a master: 'ok' its own post-write echo (advanced
+    // version, unchanged body), 'bad' the server's current state.
+    const byId = Object.fromEntries(conflicts.map((c) => [c.id, c]))
+    expect(byId.ok).toMatchObject({ id: 'ok', version: 1, data: { a: 1 } })
+    expect(byId.bad).toMatchObject({ id: 'bad', version: 1, data: { server: true } })
+  })
+})
+
+describe('createPushHandler version write-back', () => {
+  it('reports version 1 for a create when the server does not expose the ETag', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      { newDocumentState: newDoc({ id: 'r1', data: { a: 1 } }) }
+    ])
+
+    expect(master).toMatchObject({ id: 'r1', version: 1, data: { a: 1 } })
+  })
+
+  it('reports assumedVersion + 1 for an update when the ETag is hidden', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        assumedMasterState: newDoc({ version: 5, data: { a: 1 } }),
+        newDocumentState: newDoc({ version: 5, data: { a: 2 } })
+      }
+    ])
+
+    expect(master).toMatchObject({ version: 6, data: { a: 2 } })
+  })
+
+  it('prefers the server-reported version (exposed write ETag) over the +1 guess', async () => {
+    const port = fakePushPort({ reportContentVersion: 42 })
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        assumedMasterState: newDoc({ version: 5, data: { a: 1 } }),
+        newDocumentState: newDoc({ version: 5, data: { a: 2 } })
+      }
+    ])
+
+    expect(master).toMatchObject({ version: 42, data: { a: 2 } })
+  })
+
+  it('advances metaVersion (+1) for a metadata-only change, content version untouched', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        assumedMasterState: newDoc({
+          version: 5,
+          metaVersion: 2,
+          data: { a: 1 },
+          custom: { jwe: 'old' }
+        }),
+        newDocumentState: newDoc({
+          version: 5,
+          metaVersion: 2,
+          data: { a: 1 },
+          custom: { jwe: 'new' }
+        })
+      }
+    ])
+
+    expect(master).toMatchObject({
+      version: 5,
+      metaVersion: 3,
+      custom: { jwe: 'new' }
+    })
+  })
+
+  it('prefers the server-reported metaVersion over the +1 guess', async () => {
+    const port = fakePushPort({ reportMetaVersion: 9 })
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        assumedMasterState: newDoc({
+          version: 5,
+          metaVersion: 2,
+          data: { a: 1 },
+          custom: { jwe: 'old' }
+        }),
+        newDocumentState: newDoc({
+          version: 5,
+          metaVersion: 2,
+          data: { a: 1 },
+          custom: { jwe: 'new' }
+        })
+      }
+    ])
+
+    expect(master).toMatchObject({ metaVersion: 9 })
+  })
+
+  it('reports metaVersion 1 for a first metadata write on an existing resource', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        assumedMasterState: newDoc({ version: 5, data: { a: 1 } }),
+        newDocumentState: newDoc({
+          version: 5,
+          data: { a: 1 },
+          custom: { jwe: 'x' }
+        })
+      }
+    ])
+
+    expect(master).toMatchObject({ version: 5, metaVersion: 1 })
+  })
+
+  it('reports both advanced versions for a create with custom', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const [master] = await push([
+      {
+        newDocumentState: newDoc({
+          id: 'r1',
+          data: { a: 1 },
+          custom: { jwe: 'x' }
+        })
+      }
+    ])
+
+    expect(master).toMatchObject({ version: 1, metaVersion: 1 })
+  })
+
+  it('reports nothing for a delete', async () => {
+    const port = fakePushPort()
+    const push = createPushHandler(port)
+
+    const conflicts = await push([
+      {
+        assumedMasterState: newDoc({ version: 7, data: { a: 1 } }),
+        newDocumentState: newDoc({ version: 7, _deleted: true })
+      }
+    ])
+
+    expect(conflicts).toEqual([])
   })
 })

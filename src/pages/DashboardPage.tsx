@@ -6,7 +6,7 @@
  */
 import { Typography } from '@mui/material'
 import { useShallow } from 'zustand/react/shallow'
-import { allTodo, activeProjects } from '@/domain/queries'
+import { allTodo, allForStatus } from '@/domain/queries'
 import { nextAction } from '@/domain/projects'
 import { compareActionItems } from '@/domain/sort'
 import { useActionItems } from '@/stores/entities/actionItems'
@@ -23,7 +23,9 @@ export function DashboardPage() {
   const todo = (category: MywnCategory, includeProjects = true) =>
     allTodo(items, category, undefined, includeProjects).sort(compareActionItems)
 
-  const active = activeProjects(projects).filter((p) => nextAction(p, items))
+  const active = allForStatus(projects, 'active')
+    .map((project) => ({ project, next: nextAction(project, items) }))
+    .filter(({ next }) => next != null)
 
   return (
     <div data-testid="dashboard-page">
@@ -36,12 +38,8 @@ export function DashboardPage() {
         {active.length === 0 ? (
           <Typography color="text.secondary">No active projects.</Typography>
         ) : (
-          active.map((p) => (
-            <ProjectCard
-              key={p.id}
-              project={p}
-              nextAction={nextAction(p, items)}
-            />
+          active.map(({ project, next }) => (
+            <ProjectCard key={project.id} project={project} nextAction={next} />
           ))
         )}
       </div>

@@ -21,11 +21,13 @@ import {
 } from '@mui/material'
 import { createActionItem, createQuestion, createWebLink } from '@/domain/factories'
 import { changeStatus, nextAction, timeElapsed } from '@/domain/projects'
+import { isChildOf } from '@/domain/parent'
 import {
   compareActionItems,
   compareQuestions,
   sortActionItemsCompletedDesc
 } from '@/domain/sort'
+import { formatTimestamp } from '@/lib/dates'
 import { getDeviceId } from '@/stores/storageManager'
 import { useProjects } from '@/stores/entities/projects'
 import { useActionItems } from '@/stores/entities/actionItems'
@@ -34,6 +36,8 @@ import { useQuestions } from '@/stores/entities/questions'
 import { useGoals } from '@/stores/entities/goals'
 import { useFocus } from '@/stores/entities/focus'
 import { StatusButtons } from '@/components/StatusButtons'
+import { EntityShowHeader } from '@/components/EntityShowHeader'
+import { NotFound } from '@/components/NotFound'
 import { LinksTable } from '@/components/LinksTable'
 import { QuestionList } from '@/components/QuestionList'
 import { ActionItemRow } from '@/components/ActionItemRow'
@@ -58,19 +62,17 @@ export function ProjectShowPage() {
   const [showCompleted, setShowCompleted] = useState(false)
 
   if (!project) {
-    return <Typography>Project not found.</Typography>
+    return <NotFound label="Project" />
   }
 
-  const projectItems = allItems.filter(
-    (i) => i.parentType === 'project' && i.parentKey === project.id
-  )
+  const projectItems = allItems.filter(isChildOf('project', project.id))
   const todoItems = projectItems.filter((i) => !i.done).sort(compareActionItems)
   const completedItems = sortActionItemsCompletedDesc(
     projectItems.filter((i) => i.done)
   )
   const next = nextAction(project, allItems)
   const questions = allQuestions
-    .filter((q) => q.parentType === 'project' && q.parentKey === project.id)
+    .filter(isChildOf('project', project.id))
     .sort(compareQuestions)
   const goalsServed = goals.filter((g) => project.goalIds.includes(g.id))
 
@@ -122,26 +124,21 @@ export function ProjectShowPage() {
 
   return (
     <Box data-testid="project-show-page">
-      <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-        <Button component={RouterLink} to="/projects" size="small">
-          &lt; Projects
-        </Button>
-        <Button
-          component={RouterLink}
-          to={`/projects/${project.id}/edit`}
-          size="small"
-        >
-          Edit
-        </Button>
-        <Button
-          size="small"
-          variant="contained"
-          onClick={() => void setFocus('project', project.id)}
-          data-testid="make-current-focus"
-        >
-          Make Current Focus
-        </Button>
-      </Stack>
+      <EntityShowHeader
+        backTo="/projects"
+        backLabel="Projects"
+        editTo={`/projects/${project.id}/edit`}
+        extras={
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => void setFocus('project', project.id)}
+            data-testid="make-current-focus"
+          >
+            Make Current Focus
+          </Button>
+        }
+      />
 
       <Typography variant="h4" sx={{ color: AREA_COLORS[project.area] }}>
         {project.name}
@@ -180,12 +177,12 @@ export function ProjectShowPage() {
         </Stack>
         {project.status === 'completed' && project.completedAt && (
           <Typography variant="body2" color="success.main" data-testid="project-completed-at">
-            Completed {new Date(project.completedAt).toLocaleString()}
+            Completed {formatTimestamp(project.completedAt)}
           </Typography>
         )}
         {project.status === 'canceled' && project.canceledAt && (
           <Typography variant="body2" color="text.secondary" data-testid="project-canceled-at">
-            Canceled {new Date(project.canceledAt).toLocaleString()}
+            Canceled {formatTimestamp(project.canceledAt)}
           </Typography>
         )}
         <Typography>Area: {project.area}</Typography>

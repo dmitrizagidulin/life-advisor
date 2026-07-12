@@ -7,6 +7,7 @@ import {
   categoryMove,
   enforceCompletedAt,
   isValidCategory,
+  setMywnCategory,
   toggleDone
 } from './actionItems'
 import { createActionItem } from './factories'
@@ -62,6 +63,21 @@ describe('bump', () => {
     const result = bump(item, NOW)
     expect(result.bumpCount).toBe(3)
     expect(result.updatedAt).toBe(NOW)
+  })
+})
+
+describe('setMywnCategory', () => {
+  it('sets the category and stamps updatedAt', () => {
+    const item = ai({ name: 'x', mywnCategory: 'someday' })
+    const result = setMywnCategory(item, 'critical', NOW)
+    expect(result.mywnCategory).toBe('critical')
+    expect(result.updatedAt).toBe(NOW)
+  })
+
+  it('does not mutate the input', () => {
+    const item = ai({ name: 'x', mywnCategory: 'someday' })
+    setMywnCategory(item, 'critical', NOW)
+    expect(item.mywnCategory).toBe('someday')
   })
 })
 

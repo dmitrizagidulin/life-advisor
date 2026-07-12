@@ -18,43 +18,45 @@ import type {
   ThoughtDoc,
   CurrentFocusDoc
 } from '@/types/domain'
+import { LA_COLLECTIONS } from '@/app.config'
+import type { CollectionKey, WasCollectionId } from '@/app.config'
 
-/** The exported bundle: one array per WAS collection, keyed by collection name. */
-export interface ExportBundle {
-  'action-items': ActionItemDoc[]
-  projects: ProjectDoc[]
-  goals: GoalDoc[]
-  questions: QuestionDoc[]
-  answers: AnswerDoc[]
-  'web-links': WebLinkDoc[]
-  thoughts: ThoughtDoc[]
-  'current-focus': CurrentFocusDoc[]
-}
+/** Any decrypted document held by one of the seven generic list stores. */
+export type ExportDoc =
+  | ActionItemDoc
+  | ProjectDoc
+  | GoalDoc
+  | QuestionDoc
+  | AnswerDoc
+  | WebLinkDoc
+  | ThoughtDoc
 
 /**
- * Shapes the decrypted per-collection docs into the keyed export bundle.
+ * The live value of one collection: an array of docs for the seven list stores,
+ * or the singleton's held doc (or `null`) for `current-focus`.
+ */
+export type ExportValue = ExportDoc[] | CurrentFocusDoc | null
+
+/** The decrypted live docs of every collection, keyed by collection key. */
+export type ExportInput = Record<CollectionKey, ExportValue>
+
+/** The exported bundle: one array per WAS collection, keyed by collection name. */
+export type ExportBundle = Record<WasCollectionId, ExportDoc[] | CurrentFocusDoc[]>
+
+/**
+ * Shapes the decrypted per-collection docs into the export bundle keyed by WAS
+ * collection name. Every value is emitted as an array (the singleton becomes a
+ * zero- or one-element array) so consumers see one uniform shape. The roster is
+ * derived from {@link LA_COLLECTIONS} -- the single enumeration of collections.
  *
- * @param input {object}   the live docs of each collection (already tombstone-free)
+ * @param input {ExportInput}   the live docs of each collection (already tombstone-free)
  * @returns {ExportBundle}
  */
-export function buildExportBundle(input: {
-  actionItems: ActionItemDoc[]
-  projects: ProjectDoc[]
-  goals: GoalDoc[]
-  questions: QuestionDoc[]
-  answers: AnswerDoc[]
-  webLinks: WebLinkDoc[]
-  thoughts: ThoughtDoc[]
-  currentFocus: CurrentFocusDoc | null
-}): ExportBundle {
-  return {
-    'action-items': input.actionItems,
-    projects: input.projects,
-    goals: input.goals,
-    questions: input.questions,
-    answers: input.answers,
-    'web-links': input.webLinks,
-    thoughts: input.thoughts,
-    'current-focus': input.currentFocus ? [input.currentFocus] : []
+export function buildExportBundle(input: ExportInput): ExportBundle {
+  const bundle: Record<string, ExportDoc[] | CurrentFocusDoc[]> = {}
+  for (const { key, id } of LA_COLLECTIONS) {
+    const value = input[key]
+    bundle[id] = Array.isArray(value) ? value : value ? [value] : []
   }
+  return bundle as ExportBundle
 }

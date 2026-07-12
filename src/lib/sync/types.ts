@@ -121,19 +121,26 @@ export interface WasSyncPort {
    * `ifNoneMatch: true` for a create-if-absent, or `ifMatch` (a quoted ETag over
    * the content `version`) for an update-if-unchanged.
    *
+   * Resolves with the resource's NEW content `version` when the server surfaces
+   * it (the write response's `ETag`), or `undefined` when it does not (e.g. a
+   * cross-origin response that hides `ETag`). The push handler uses this to
+   * advance its assumed-master version so a rapid follow-up edit does not push a
+   * stale `If-Match`; when it is `undefined` the handler falls back to the
+   * server's monotonic `+1` rule.
+   *
    * @param options {object}
    * @param options.id {string}
    * @param options.data {Json}
    * @param [options.ifMatch] {string}
    * @param [options.ifNoneMatch] {boolean}
-   * @returns {Promise<void>}
+   * @returns {Promise<number | undefined>}
    */
   putContent(options: {
     id: string
     data: Json
     ifMatch?: string
     ifNoneMatch?: boolean
-  }): Promise<void>
+  }): Promise<number | undefined>
 
   /**
    * Conditionally deletes a resource (writes a tombstone; `DELETE /:id`). Pass
@@ -154,19 +161,24 @@ export interface WasSyncPort {
    * update-if-unchanged. The resource must already exist (the server does not
    * create a resource from a `/meta` write).
    *
+   * Resolves with the resource's NEW `metaVersion` when the server surfaces it
+   * (the write response's `ETag`), or `undefined` when it does not -- the same
+   * contract as {@link putContent}, used by the push handler to keep the
+   * assumed-master `metaVersion` in step.
+   *
    * @param options {object}
    * @param options.id {string}
    * @param options.custom {Json}
    * @param [options.ifMatch] {string}
    * @param [options.ifNoneMatch] {boolean}
-   * @returns {Promise<void>}
+   * @returns {Promise<number | undefined>}
    */
   putMeta(options: {
     id: string
     custom: Json
     ifMatch?: string
     ifNoneMatch?: boolean
-  }): Promise<void>
+  }): Promise<number | undefined>
 
   /**
    * Re-reads a single resource's current master state (content + metadata) for
@@ -191,5 +203,20 @@ export class WasSyncConflictError extends Error {
   constructor(message = 'WAS conditional write precondition failed.') {
     super(message)
     this.name = 'WasSyncConflictError'
+  }
+}
+
+/**
+ * Thrown by a {@link WasSyncPort} `deleteContent` when the target resource is
+ * already absent (the server answers `404 not-found`). This happens when a row
+ * was created and deleted locally before any push reached the server: there is
+ * no remote resource to tombstone, so the delete is already satisfied. The push
+ * handler treats it as a terminal no-op for a delete rather than a retryable
+ * error, so a phantom tombstone cannot wedge the collection's push queue.
+ */
+export class WasResourceAbsentError extends Error {
+  constructor(message = 'WAS resource is already absent.') {
+    super(message)
+    this.name = 'WasResourceAbsentError'
   }
 }

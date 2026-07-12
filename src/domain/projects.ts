@@ -41,6 +41,14 @@ export function changeStatus(
   }
 }
 
+/** Increment the bump count (`bump!`). */
+export function bump(
+  project: ProjectDoc,
+  now: string = nowIso()
+): ProjectDoc {
+  return { ...project, bumpCount: project.bumpCount + 1, updatedAt: now }
+}
+
 /**
  * The project's first not-done action item by the action-item comparator
  * (`next_action`). `items` may be any action-item pool; only children of this

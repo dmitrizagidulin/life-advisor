@@ -17,6 +17,7 @@ import type {
   WebLinkDoc
 } from '@/types/domain'
 import { enforceDefaultDayParent } from './parent'
+import { changeStatus } from './projects'
 
 export function createActionItem(
   input: Partial<ActionItemDoc> & { name: string; deviceId: string },
@@ -46,12 +47,13 @@ export function createProject(
   now: string = nowIso(),
   id: string = uuidv7()
 ): ProjectDoc {
-  return {
+  const status = input.status ?? 'idea'
+  const base: ProjectDoc = {
     id,
     name: input.name,
     description: input.description,
     url: input.url,
-    status: input.status ?? 'idea',
+    status,
     completedAt: input.completedAt ?? null,
     canceledAt: input.canceledAt ?? null,
     area: input.area ?? 'admin',
@@ -63,6 +65,10 @@ export function createProject(
     updatedAt: input.updatedAt ?? now,
     deviceId: input.deviceId
   }
+  // Route the initial status through the status machine so a project created
+  // as completed/canceled gets the right timestamps stamped (and cleared),
+  // rather than persisting with a null completedAt/canceledAt.
+  return changeStatus(base, status, base.updatedAt)
 }
 
 export function createGoal(

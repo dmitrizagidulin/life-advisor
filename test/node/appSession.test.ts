@@ -10,6 +10,7 @@ import {
   clearAppSession,
   earliestExpiry,
   isExpired,
+  loadPersistedSeed,
   persistAppSession,
   restoreAppSession,
   type RestoredAppSession
@@ -81,14 +82,24 @@ describe('persist/restore', () => {
     expect(await restoreAppSession({ idb })).toBeNull()
   })
 
-  it('clears and returns null for an expired record', async () => {
+  it('clears an expired record but keeps the seed for reconnect', async () => {
     const idb = new IDBFactory()
     const session = sessionFixture(new Date(Date.now() - 1000).toISOString())
     await persistAppSession({ session, idb })
     expect(await restoreAppSession({ idb })).toBeNull()
-    // The record (including the seed) was wiped, not just skipped.
-    const again = await restoreAppSession({ idb })
-    expect(again).toBeNull()
+    // The stale record is gone, but the seed survives grant expiry so a
+    // reconnect can renew the grants in place.
+    expect(await restoreAppSession({ idb })).toBeNull()
+    const seed = await loadPersistedSeed({ idb })
+    expect(seed).toEqual(session.seed)
+  })
+
+  it('loadPersistedSeed returns null once the session is fully cleared', async () => {
+    const idb = new IDBFactory()
+    await persistAppSession({ session: sessionFixture(futureIso(60_000)), idb })
+    expect(await loadPersistedSeed({ idb })).not.toBeNull()
+    await clearAppSession({ idb })
+    expect(await loadPersistedSeed({ idb })).toBeNull()
   })
 
   it('returns null for a structurally invalid record', async () => {

@@ -46,6 +46,15 @@ export function bump(
   return { ...item, bumpCount: item.bumpCount + 1, updatedAt: now }
 }
 
+/** Set a single item's MYWN category, stamping `updatedAt`. */
+export function setMywnCategory(
+  item: ActionItemDoc,
+  category: MywnCategory,
+  now: string = nowIso()
+): ActionItemDoc {
+  return { ...item, mywnCategory: category, updatedAt: now }
+}
+
 /** Whether a string names a valid MYWN category. */
 export function isValidCategory(category: string): category is MywnCategory {
   return (MYWN_CATEGORIES as readonly string[]).includes(category)

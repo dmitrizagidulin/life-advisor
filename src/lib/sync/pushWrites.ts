@@ -17,17 +17,25 @@
  * `/meta` write to a resource that does not yet exist.
  *
  * RxDB's push contract asks only for *conflicts* back (the current master state
- * of each rejected row); a successful write's new `version` / `metaVersion` is
- * not returned here -- it is picked up on the next pull, where our own write
- * echoes back as a remote change (idempotent, since the bodies are
- * byte-identical). We deliberately do not capture the `204` ETag to short-circuit
- * that echo: doing so would require a side write to the local revision fields
- * from inside the push handler, which risks a re-push loop, for no correctness
- * gain on immutable content-addressed collections.
+ * of each rejected row). These are MUTABLE-head collections, though (an update
+ * re-encrypts under the same id with `sequence`+1), so the server bumps the
+ * content `version` (and, on a `/meta` write, the `metaVersion`) on every
+ * successful write. If the handler let those new versions go unrecorded, RxDB's
+ * assumed-master versions would stay at the values we pushed, and a second edit
+ * inside the poll window would push a stale `If-Match`, drawing a spurious `412`
+ * and a full conflict round trip. So on a successful write the handler reports
+ * the resource's NEW master state (same body, advanced `version` and/or
+ * `metaVersion`) back through the conflicts channel -- the one seam RxDB exposes
+ * for correcting the assumed master. Because the body and deletion flag are
+ * unchanged, the LWW conflict handler recognises it as our own echo and resolves
+ * without a re-push, so the assumed-master versions simply advance. Each new
+ * version comes from its write response `ETag` when the server exposes it, else
+ * from the server's monotonic `+1` rule (a wrong guess is self-correcting: it
+ * merely re-draws the occasional `412`).
  */
 import type { WithDeleted } from 'rxdb/plugins/core'
 import type { Json, MasterState, SyncedDoc, WasSyncPort } from './types.js'
-import { WasSyncConflictError } from './types.js'
+import { WasResourceAbsentError, WasSyncConflictError } from './types.js'
 
 /**
  * Formats a master revision (`version` or `metaVersion`) as the quoted strong
@@ -42,10 +50,10 @@ export function formatEtag(revision: number): string {
 
 /**
  * Structural equality over two opaque bodies, by canonical-free JSON string.
- * Used only to decide whether the content or the metadata half changed and thus
- * which endpoint(s) to write. Content-addressed collections never mutate `data`
- * for a given id (so the content half only fires on create/delete), and a real
- * metadata edit re-encrypts to fresh bytes, so this coarse comparison is
+ * Used to decide whether the content or the metadata half changed (and thus
+ * which endpoint(s) to write) and, on a re-pushed conflict echo, to recognise
+ * that the body already matches the assumed master so no re-write is issued.
+ * Every real edit re-encrypts to fresh bytes, so this coarse comparison is
  * sufficient for routing.
  *
  * @param left {Json | undefined}
@@ -110,7 +118,9 @@ async function assembleConflict({
 /**
  * Sends one local change to the remote Collection as up to two conditional
  * writes (content, then metadata). Returns the master-state conflict entry on a
- * `412` at either step, or `null` on success.
+ * `412` at either step; on success, returns the post-write master state (same
+ * body, advanced `version` and/or `metaVersion`) so RxDB can advance its
+ * assumed master, or `null` when nothing was written (a no-op, or a delete).
  *
  * @param options {object}
  * @param options.port {WasSyncPort}
@@ -142,13 +152,14 @@ async function pushRow({
       return null
     }
 
-    // Content half: write on create, or when the content body changed. For a
-    // content-addressed collection the update case never fires (an immutable
-    // body for a stable id), but it is handled for generality.
+    // Content half: write on create, or when the content body changed. On a
+    // mutable head an update re-encrypts to fresh bytes, so this fires on nearly
+    // every edit.
     const contentChanged =
       isCreate || !bodiesEqual(newDocumentState.data, assumedMasterState?.data)
+    let newContentVersion: number | undefined
     if (contentChanged) {
-      await port.putContent({
+      const reported = await port.putContent({
         id,
         data: newDocumentState.data ?? null,
         ...(isCreate
@@ -157,6 +168,11 @@ async function pushRow({
               ifMatch: formatEtag(assumedVersion)
             })
       })
+      // Prefer the version the server reported (the write `ETag`); otherwise the
+      // server's monotonic `+1` rule -- a create lands at `1` (from an absent
+      // resource's implicit `0`), an update at the matched version `+1`.
+      newContentVersion =
+        reported ?? (isCreate ? 1 : (assumedVersion ?? 0) + 1)
     }
 
     // Metadata half: write when the resource has metadata and it changed. On a
@@ -165,17 +181,32 @@ async function pushRow({
       newDocumentState.custom,
       assumedMasterState?.custom
     )
+    let newMetaVersion: number | undefined
     if (newDocumentState.custom !== undefined && metadataChanged) {
       const assumedMetaVersion = assumedMasterState?.metaVersion
-      await port.putMeta({
+      const reported = await port.putMeta({
         id,
         custom: newDocumentState.custom,
         ...(assumedMetaVersion !== undefined
           ? { ifMatch: formatEtag(assumedMetaVersion) }
           : { ifNoneMatch: true })
       })
+      // Same monotonic `+1` fallback as the content half: a first metadata
+      // write lands at `1`, an update at the matched `metaVersion` `+1`.
+      newMetaVersion = reported ?? (assumedMetaVersion ?? 0) + 1
     }
 
+    // Report the advanced version(s) back through the conflicts channel so
+    // RxDB's assumed master catches up (see the file header). The body is
+    // unchanged, so the LWW conflict handler treats it as our own echo and
+    // resolves without re-pushing.
+    if (newContentVersion !== undefined || newMetaVersion !== undefined) {
+      return {
+        ...newDocumentState,
+        ...(newContentVersion !== undefined && { version: newContentVersion }),
+        ...(newMetaVersion !== undefined && { metaVersion: newMetaVersion })
+      }
+    }
     return null
   } catch (err) {
     if (err instanceof WasSyncConflictError) {
@@ -186,6 +217,13 @@ async function pushRow({
         fallbackVersion: assumedVersion ?? newDocumentState.version
       })
     }
+    // A delete whose target is already absent is a terminal no-op: the row was
+    // created and deleted locally before any push reached the server, so there
+    // is nothing to tombstone. Swallowing it keeps a phantom tombstone from
+    // wedging the collection's push queue (which RxDB would retry forever).
+    if (err instanceof WasResourceAbsentError && newDocumentState._deleted) {
+      return null
+    }
     // Any non-conflict error (network, 5xx, auth) propagates so RxDB retries
     // the whole batch with backoff.
     throw err
@@ -194,7 +232,11 @@ async function pushRow({
 
 /**
  * Builds the RxDB push handler that fans a batch of local changes out to
- * conditional WAS writes and returns the conflicting rows' master states.
+ * conditional WAS writes and returns, per row, the master state RxDB should
+ * adopt: a genuine conflict's current master on a `412`, or the post-write
+ * master (advanced `version` and/or `metaVersion`, unchanged body) on a
+ * successful write so the assumed-master versions stay in step. Rows that wrote
+ * nothing (no-op, delete) report nothing.
  *
  * Rows are pushed concurrently; if any non-conflict error is thrown the whole
  * batch rejects (RxDB re-sends it later), matching RxDB's all-or-nothing retry.

@@ -4,28 +4,18 @@
  * old server-side export script. The shaping is the pure {@link buildExportBundle}
  * (unit-tested); this module wires it to the live stores and a browser download.
  */
-import { buildExportBundle, type ExportBundle } from '@/lib/exportData'
-import { useActionItems } from '@/stores/entities/actionItems'
-import { useProjects } from '@/stores/entities/projects'
-import { useGoals } from '@/stores/entities/goals'
-import { useQuestions } from '@/stores/entities/questions'
-import { useAnswers } from '@/stores/entities/answers'
-import { useWebLinks } from '@/stores/entities/webLinks'
-import { useThoughts } from '@/stores/entities/thoughts'
-import { useFocus } from '@/stores/entities/focus'
+import { buildExportBundle } from '@/lib/exportData'
+import type { ExportBundle, ExportInput } from '@/lib/exportData'
+import { COLLECTION_REGISTRY } from '@/stores/collectionRegistry'
+import type { CollectionKey } from '@/app.config'
 
 /** Reads the current live docs from every entity store into an export bundle. */
-export function collectExportBundle(): ExportBundle {
-  return buildExportBundle({
-    actionItems: [...useActionItems.getState().byId.values()],
-    projects: [...useProjects.getState().byId.values()],
-    goals: [...useGoals.getState().byId.values()],
-    questions: [...useQuestions.getState().byId.values()],
-    answers: [...useAnswers.getState().byId.values()],
-    webLinks: [...useWebLinks.getState().byId.values()],
-    thoughts: [...useThoughts.getState().byId.values()],
-    currentFocus: useFocus.getState().doc
-  })
+function collectExportBundle(): ExportBundle {
+  const input = {} as ExportInput
+  for (const key of Object.keys(COLLECTION_REGISTRY) as CollectionKey[]) {
+    input[key] = COLLECTION_REGISTRY[key].collect()
+  }
+  return buildExportBundle(input)
 }
 
 /** Serializes the export bundle and triggers a browser download. */

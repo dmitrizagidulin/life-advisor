@@ -5,91 +5,20 @@
  * wallet session).
  */
 import type { Json } from '@/lib/sync'
-import { requireStore } from '@/stores/storageManager'
-import { useActionItems } from '@/stores/entities/actionItems'
-import { useProjects } from '@/stores/entities/projects'
-import { useGoals } from '@/stores/entities/goals'
-import { useQuestions } from '@/stores/entities/questions'
-import { useAnswers } from '@/stores/entities/answers'
-import { useWebLinks } from '@/stores/entities/webLinks'
-import { useThoughts } from '@/stores/entities/thoughts'
-import { useFocus } from '@/stores/entities/focus'
-import type { CurrentFocusDoc } from '@/types/domain'
-
-/** Re-hydrate hooks keyed by localStore/RxDB collection key. */
-export const HYDRATORS: Record<string, () => Promise<void>> = {
-  actionItems: () => useActionItems.getState().hydrate(),
-  projects: () => useProjects.getState().hydrate(),
-  goals: () => useGoals.getState().hydrate(),
-  questions: () => useQuestions.getState().hydrate(),
-  answers: () => useAnswers.getState().hydrate(),
-  webLinks: () => useWebLinks.getState().hydrate(),
-  thoughts: () => useThoughts.getState().hydrate(),
-  currentFocus: () => useFocus.getState().hydrate()
-}
+import { hasStore, requireStore } from '@/stores/storageManager'
+import { COLLECTION_REGISTRY, collectionEntry } from '@/stores/collectionRegistry'
 
 /** Hydrates every entity store from the (already opened) localStore. */
 export async function hydrateAll(): Promise<void> {
-  await Promise.all(Object.values(HYDRATORS).map((hydrate) => hydrate()))
+  await Promise.all(
+    Object.values(COLLECTION_REGISTRY).map((entry) => entry.hydrate())
+  )
 }
 
 /** Empties every entity store (logout). */
 export function clearAllEntityStores(): void {
-  useActionItems.getState().replaceAll([])
-  useProjects.getState().replaceAll([])
-  useGoals.getState().replaceAll([])
-  useQuestions.getState().replaceAll([])
-  useAnswers.getState().replaceAll([])
-  useWebLinks.getState().replaceAll([])
-  useThoughts.getState().replaceAll([])
-  useFocus.setState({ doc: null, exists: false, hydrated: false })
-}
-
-/**
- * Per-collection per-doc patchers: `upsert` an already-decrypted payload into
- * the store, `drop` one by uuid. The seven list stores share the generic
- * entity-store verbs; the current-focus singleton patches its own shape.
- */
-const PATCHERS: Record<
-  string,
-  { upsert: (doc: { id: string }) => void; drop: (uuid: string) => void }
-> = {
-  actionItems: {
-    upsert: (d) => useActionItems.getState().patch(d as never),
-    drop: (id) => useActionItems.getState().drop(id)
-  },
-  projects: {
-    upsert: (d) => useProjects.getState().patch(d as never),
-    drop: (id) => useProjects.getState().drop(id)
-  },
-  goals: {
-    upsert: (d) => useGoals.getState().patch(d as never),
-    drop: (id) => useGoals.getState().drop(id)
-  },
-  questions: {
-    upsert: (d) => useQuestions.getState().patch(d as never),
-    drop: (id) => useQuestions.getState().drop(id)
-  },
-  answers: {
-    upsert: (d) => useAnswers.getState().patch(d as never),
-    drop: (id) => useAnswers.getState().drop(id)
-  },
-  webLinks: {
-    upsert: (d) => useWebLinks.getState().patch(d as never),
-    drop: (id) => useWebLinks.getState().drop(id)
-  },
-  thoughts: {
-    upsert: (d) => useThoughts.getState().patch(d as never),
-    drop: (id) => useThoughts.getState().drop(id)
-  },
-  currentFocus: {
-    upsert: (d) =>
-      useFocus.setState({
-        doc: d as CurrentFocusDoc,
-        exists: true,
-        hydrated: true
-      }),
-    drop: () => useFocus.setState({ doc: null, exists: false })
+  for (const entry of Object.values(COLLECTION_REGISTRY)) {
+    entry.clear()
   }
 }
 
@@ -112,7 +41,7 @@ export async function patchFromChange(
     documentData?: { id: string; data?: Json; _deleted?: boolean }
   }
 ): Promise<void> {
-  const patcher = PATCHERS[collectionKey]
+  const patcher = collectionEntry(collectionKey)
   if (!patcher) {
     return
   }
@@ -134,6 +63,15 @@ export async function patchFromChange(
     return
   }
   if (deleted) {
+    // Only honor a tombstone for the envelope the entity currently lives in.
+    // A delete of a DIFFERENT envelope that decrypts to the same logical id is
+    // a stale duplicate being cleaned up (a reconciled singleton loser, or the
+    // pre-resurrection row of a locally re-created doc) -- dropping the live
+    // doc for it would undo the reconciliation/resurrection.
+    const mapped = requireStore().envelopeIdFor(collectionKey, payload.id)
+    if (mapped !== undefined && mapped !== row.id) {
+      return
+    }
     requireStore().forgetEnvelope(collectionKey, payload.id)
     patcher.drop(payload.id)
   } else {
@@ -152,8 +90,8 @@ const rehydrateTimers = new Map<string, ReturnType<typeof setTimeout>>()
  * @returns {void}
  */
 export function scheduleRehydrate(collectionKey: string): void {
-  const hydrate = HYDRATORS[collectionKey]
-  if (!hydrate) {
+  const entry = collectionEntry(collectionKey)
+  if (!entry) {
     return
   }
   const existing = rehydrateTimers.get(collectionKey)
@@ -164,7 +102,26 @@ export function scheduleRehydrate(collectionKey: string): void {
     collectionKey,
     setTimeout(() => {
       rehydrateTimers.delete(collectionKey)
-      void hydrate()
+      // A timer that outlived logout must not touch a torn-down store: hydrate
+      // reaches for `requireStore()`, which throws once the store is cleared.
+      if (!hasStore()) {
+        return
+      }
+      void entry.hydrate()
     }, 50)
   )
+}
+
+/**
+ * Cancels every pending debounced re-hydrate. Called on logout so a timer that
+ * fires after the LocalStore is torn down does not reach a `requireStore()` that
+ * throws (an unhandled rejection).
+ *
+ * @returns {void}
+ */
+export function cancelScheduledRehydrates(): void {
+  for (const timer of rehydrateTimers.values()) {
+    clearTimeout(timer)
+  }
+  rehydrateTimers.clear()
 }

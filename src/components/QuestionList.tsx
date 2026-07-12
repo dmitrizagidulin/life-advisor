@@ -1,14 +1,13 @@
 /**
  * A list of questions with bump / edit / delete (ports `questions/_list`), reused
  * by the questions index and the project-show screen. Rendered in the caller's
- * chosen sort order. Question bump mirrors the Rails `Question#bump!` (a plain
- * count increment; there is no dedicated domain helper for it).
+ * chosen sort order. Question bump mirrors the Rails `Question#bump!`.
  */
 import { Link as RouterLink } from 'react-router'
 import { Box, Button, IconButton, Link, Stack, Typography } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
-import { nowIso } from '@/lib/dates'
+import { bump } from '@/domain/questions'
 import { useQuestions } from '@/stores/entities/questions'
 import type { QuestionDoc } from '@/types/domain'
 
@@ -52,13 +51,7 @@ export function QuestionList({ questions }: { questions: QuestionDoc[] }) {
           <Button
             size="small"
             variant="outlined"
-            onClick={() =>
-              void update({
-                ...q,
-                bumpCount: q.bumpCount + 1,
-                updatedAt: nowIso()
-              })
-            }
+            onClick={() => void update(bump(q))}
             data-testid="bump-question"
           >
             Bump!
