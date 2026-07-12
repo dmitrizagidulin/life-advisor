@@ -7,9 +7,8 @@
 import { useEffect } from 'react'
 import { Link as RouterLink, useNavigate } from 'react-router'
 import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
+import { useAuthStore, useLogin, type LoginPhase } from '@interop/was-react'
 import { AUTH_MODE } from '@/app.config'
-import { useAuthStore } from '@/stores/authStore'
-import type { LoginPhase } from '@/auth/loginFlow'
 
 const PHASE_LABEL: Record<LoginPhase, string> = {
   probing: 'Checking your wallet for the app key...',
@@ -37,14 +36,13 @@ function DevLoginPage() {
 
 function WalletLoginPage() {
   const navigate = useNavigate()
-  const status = useAuthStore((s) => s.status)
-  const phase = useAuthStore((s) => s.phase)
-  const error = useAuthStore((s) => s.error)
+  const authStore = useAuthStore()
+  const { login, status, phase, error } = useLogin()
 
   // Try the zero-popup restore first, and leave once authenticated.
   useEffect(() => {
-    void useAuthStore.getState().restore()
-  }, [])
+    void authStore.getState().restore()
+  }, [authStore])
   useEffect(() => {
     if (status === 'authenticated') {
       navigate('/', { replace: true })
@@ -91,7 +89,7 @@ function WalletLoginPage() {
           variant="contained"
           size="large"
           disabled={busy}
-          onClick={() => void useAuthStore.getState().login()}
+          onClick={() => void login()}
           data-testid="login-with-wallet"
         >
           Login with wallet

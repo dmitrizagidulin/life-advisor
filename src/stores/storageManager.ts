@@ -1,52 +1,22 @@
 /**
- * The storage manager: a thin process-wide holder for the one {@link LocalStore}
- * instance plus the per-install device id. Entity stores reach for the store
- * through {@link requireStore} inside their CRUD actions rather than importing it
- * directly, which keeps this module free of store imports (no cycle) and lets
- * `bootstrap.ts` own the init/hydrate ordering.
- *
- * P1 is offline-only: the store is opened once from the hardcoded dev seed. P3
- * replaces {@link setLocalStore}'s caller with the unlocked wallet session.
+ * Process-wide storage access, re-exported from `@interop/was-react` with this
+ * app's pinned deviceId prefix baked into {@link getDeviceId} so call sites
+ * (domain constructors, form pages, entity actions) need no per-call config.
  */
-import { uuidv7 } from 'uuidv7'
-import type { LocalStore } from '@/stores/localStore'
+import { getDeviceId as libGetDeviceId } from '@interop/was-react'
+import { WAS_APP_CONFIG } from '@/app.config'
 
-let localStore: LocalStore | null = null
-
-/** Install the opened store (called once by the bootstrap). */
-export function setLocalStore(store: LocalStore): void {
-  localStore = store
-}
-
-/** The opened store, or throws if the app has not bootstrapped yet. */
-export function requireStore(): LocalStore {
-  if (!localStore) {
-    throw new Error('LocalStore is not initialized; call initApp() first.')
-  }
-  return localStore
-}
-
-/** Whether the store has been opened. */
-export function hasStore(): boolean {
-  return localStore !== null
-}
-
-/** Releases the held store reference (logout; the caller closes the db). */
-export function clearLocalStore(): void {
-  localStore = null
-}
-
-const DEVICE_ID_KEY = 'la:deviceId'
+export {
+  setLocalStore,
+  requireStore,
+  hasStore,
+  clearLocalStore
+} from '@interop/was-react'
 
 /**
  * A stable per-install device id (the last-write-wins tiebreak stamped into
- * every payload), persisted in localStorage.
+ * every payload), persisted in localStorage under the pinned `la:` prefix.
  */
 export function getDeviceId(): string {
-  let id = localStorage.getItem(DEVICE_ID_KEY)
-  if (!id) {
-    id = uuidv7()
-    localStorage.setItem(DEVICE_ID_KEY, id)
-  }
-  return id
+  return libGetDeviceId({ storageKeyPrefix: WAS_APP_CONFIG.storageKeyPrefix })
 }

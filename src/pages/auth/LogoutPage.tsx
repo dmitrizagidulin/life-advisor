@@ -7,18 +7,16 @@
 import { useEffect, useState } from 'react'
 import { Link as RouterLink } from 'react-router'
 import { Box, Button, CircularProgress, Typography } from '@mui/material'
+import { useLogout } from '@interop/was-react'
 import { AUTH_MODE } from '@/app.config'
-import { useAuthStore } from '@/stores/authStore'
 
 function WalletLogoutPage() {
   const [done, setDone] = useState(false)
+  const logout = useLogout()
 
   useEffect(() => {
-    void useAuthStore
-      .getState()
-      .logout()
-      .finally(() => setDone(true))
-  }, [])
+    void logout().finally(() => setDone(true))
+  }, [logout])
 
   return (
     <Box data-testid="logout-page" sx={{ textAlign: 'center', mt: 6 }}>

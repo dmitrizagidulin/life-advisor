@@ -7,9 +7,9 @@
 import { useEffect } from 'react'
 import { Navigate, Outlet } from 'react-router'
 import { Alert, Box, CircularProgress, Typography } from '@mui/material'
+import { useAppReady, useAuthStore, useSession } from '@interop/was-react'
 import { AUTH_MODE } from '@/app.config'
-import { initApp, useAppReady } from '@/stores/bootstrap'
-import { useAuthStore } from '@/stores/authStore'
+import { initApp } from '@/stores/bootstrap'
 
 function CenteredSpinner({ label }: { label: string }) {
   return (
@@ -31,17 +31,18 @@ function CenteredSpinner({ label }: { label: string }) {
 }
 
 export function ProtectedRoute() {
-  const ready = useAppReady((s) => s.ready)
-  const error = useAppReady((s) => s.error)
-  const authStatus = useAuthStore((s) => s.status)
+  const ready = useAppReady(s => s.ready)
+  const error = useAppReady(s => s.error)
+  const { status: authStatus } = useSession()
+  const authStore = useAuthStore()
 
   useEffect(() => {
     if (AUTH_MODE === 'dev') {
       void initApp()
     } else {
-      void useAuthStore.getState().restore()
+      void authStore.getState().restore()
     }
-  }, [])
+  }, [authStore])
 
   if (error) {
     return (

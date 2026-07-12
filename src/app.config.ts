@@ -1,8 +1,11 @@
 /**
  * Application configuration: environment-variable exports and app-wide
  * constants. Adapted from freewallet's app.config: WAS host, this app's origin,
- * and the registry of the eight storage collections.
+ * the registry of the eight storage collections, and the assembled
+ * {@link WasAppConfig} handed to `@interop/was-react`.
  */
+import type { WasAppConfig } from '@interop/was-react'
+
 // Vite injects `import.meta.env` in the browser build; a plain Node context
 // (the dev provisioning script, or a bare `tsx` import) has no such object, so
 // fall back to an empty record rather than throwing on property access.
@@ -30,16 +33,19 @@ export const WAS_SERVER_URL = env.VITE_WAS_SERVER_URL
 // Dev-sync mode (P2, CHAPI bypassed): when truthy, the app loads a locally
 // provisioned grants file and replicates to a running was-teaching-server using
 // the dev seed's delegated zcaps. Off by default (offline-only).
-export const WAS_DEV_SYNC = env.VITE_WAS_DEV_SYNC === 'true' || env.VITE_WAS_DEV_SYNC === '1'
+export const WAS_DEV_SYNC =
+  env.VITE_WAS_DEV_SYNC === 'true' || env.VITE_WAS_DEV_SYNC === '1'
 
 // URL the app fetches the dev grants JSON from (a git-ignored file written into
 // `public/` by scripts/provision-dev-grants.ts; Vite serves `public/` at root).
-export const WAS_DEV_GRANTS_URL = env.VITE_WAS_DEV_GRANTS_URL || '/dev-grants.local.json'
+export const WAS_DEV_GRANTS_URL =
+  env.VITE_WAS_DEV_GRANTS_URL || '/dev-grants.local.json'
 
 // Replication tuning (optional). Undefined leaves the adapter defaults.
-export const WAS_SYNC_BATCH_SIZE: number | undefined = env.VITE_WAS_SYNC_BATCH_SIZE
-  ? Number(env.VITE_WAS_SYNC_BATCH_SIZE)
-  : undefined
+export const WAS_SYNC_BATCH_SIZE: number | undefined =
+  env.VITE_WAS_SYNC_BATCH_SIZE
+    ? Number(env.VITE_WAS_SYNC_BATCH_SIZE)
+    : undefined
 export const WAS_SYNC_RETRY_MS: number | undefined = env.VITE_WAS_SYNC_RETRY_MS
   ? Number(env.VITE_WAS_SYNC_RETRY_MS)
   : undefined
@@ -75,7 +81,33 @@ export type CollectionKey = (typeof LA_COLLECTIONS)[number]['key']
 /** A WAS collection id (the deliberately unprefixed, cross-app name). */
 export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
 
-/** Resolve a localStore/RxDB collection key from its WAS collection id. */
-export function collectionKeyForId(id: string): CollectionKey | undefined {
-  return LA_COLLECTIONS.find((entry) => entry.id === id)?.key
+/**
+ * The one `WasAppConfig` handed to `@interop/was-react` (the session provider,
+ * the auth store, and the dev harness all read from here).
+ *
+ * PINNED values -- part of this app's stored-data contract, never change them:
+ * `credential` names the seed VC type the wallet already holds; `dbName`
+ * reproduces the pre-library per-controller IndexedDB names (and the
+ * `life-advisor-session` seed store); `storageKeyPrefix` keeps the persisted
+ * `la:deviceId` localStorage key (the LWW tiebreak identity of this device).
+ */
+export const WAS_APP_CONFIG: WasAppConfig = {
+  appName: 'Life Advisor',
+  appOrigin: APP_ORIGIN,
+  ...(WAS_SERVER_URL && { wasServerUrl: WAS_SERVER_URL }),
+  mediatorBase: MEDIATOR_BASE,
+  collections: [...LA_COLLECTIONS],
+  credential: {
+    credentialType: 'LifeAdvisorKey',
+    vocabBase: 'urn:life-advisor:vocab#'
+  },
+  dbName: 'life-advisor',
+  storageKeyPrefix: 'la:',
+  sync: {
+    ...(WAS_SYNC_BATCH_SIZE !== undefined && {
+      batchSize: WAS_SYNC_BATCH_SIZE
+    }),
+    ...(WAS_SYNC_RETRY_MS !== undefined && { retryMs: WAS_SYNC_RETRY_MS }),
+    pollMs: WAS_SYNC_POLL_MS
+  }
 }

@@ -19,8 +19,7 @@ import {
 import { AREAS } from '@/types/domain'
 import { downloadExportBundle } from '@/stores/exportAll'
 import { CurrentFocusBanner } from './CurrentFocusBanner'
-import { ReconnectBanner } from './ReconnectBanner'
-import { SyncStatusChip } from './SyncStatusChip'
+import { ReconnectBanner, SyncStatusChip } from '@interop/was-react/mui'
 
 const NAV: Array<{ label: string; to: string }> = [
   { label: 'Dashboard', to: '/' },
@@ -49,8 +48,12 @@ export function AppShell() {
           >
             life-advisor
           </Typography>
-          <Stack direction="row" spacing={0.5} sx={{ flexGrow: 1, flexWrap: 'wrap' }}>
-            {NAV.map((item) => (
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ flexGrow: 1, flexWrap: 'wrap' }}
+          >
+            {NAV.map(item => (
               <Button
                 key={item.to}
                 component={RouterLink}
@@ -59,8 +62,7 @@ export function AppShell() {
                 size="small"
                 data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 sx={{
-                  fontWeight:
-                    location.pathname === item.to ? 700 : 400
+                  fontWeight: location.pathname === item.to ? 700 : 400
                 }}
               >
                 {item.label}
@@ -69,7 +71,7 @@ export function AppShell() {
             <Button
               color="inherit"
               size="small"
-              onClick={(e) => setFocusAnchor(e.currentTarget)}
+              onClick={e => setFocusAnchor(e.currentTarget)}
               data-testid="nav-focus"
             >
               Focus
@@ -79,7 +81,7 @@ export function AppShell() {
               open={Boolean(focusAnchor)}
               onClose={() => setFocusAnchor(null)}
             >
-              {AREAS.map((area) => (
+              {AREAS.map(area => (
                 <MenuItem
                   key={area}
                   component={RouterLink}
