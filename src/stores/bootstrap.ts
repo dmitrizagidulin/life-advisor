@@ -48,6 +48,10 @@ export function initApp(): Promise<void> {
           .catch(err => console.warn('Dev-sync failed to start:', err))
       }
     } catch (cause) {
+      // Un-cache the failed attempt so a retry (StrictMode remount, user
+      // reload of the route) re-runs init instead of getting the same
+      // rejected promise back forever.
+      inFlight = null
       const message = cause instanceof Error ? cause.message : String(cause)
       useAppReady.getState().setError(message)
       throw cause
