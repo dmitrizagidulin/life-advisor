@@ -3,7 +3,7 @@
  * onto today's virtual day parent via the thought factory.
  */
 import { useState } from 'react'
-import { Box, Button, TextField } from '@mui/material'
+import { Alert, Box, Button, Snackbar, TextField } from '@mui/material'
 import { createThought } from '@/domain/factories'
 import { getClientId } from '@interop/was-react'
 import { useThoughts } from '@/stores/entities/thoughts'
@@ -11,6 +11,7 @@ import { useThoughts } from '@/stores/entities/thoughts'
 export function NewThoughtBox() {
   const insert = useThoughts((s) => s.insert)
   const [text, setText] = useState('')
+  const [saved, setSaved] = useState(false)
 
   async function save() {
     const name = text.trim()
@@ -19,6 +20,7 @@ export function NewThoughtBox() {
     }
     await insert(createThought({ name, clientId: getClientId() }))
     setText('')
+    setSaved(true)
   }
 
   return (
@@ -50,6 +52,21 @@ export function NewThoughtBox() {
       >
         Save
       </Button>
+      <Snackbar
+        open={saved}
+        autoHideDuration={3000}
+        onClose={() => setSaved(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSaved(false)}
+          data-testid="new-thought-saved"
+        >
+          Thought saved
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }
