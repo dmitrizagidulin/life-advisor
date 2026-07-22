@@ -15,8 +15,8 @@ import {
 import { createActionItem, createGoal, createProject, createQuestion } from './factories'
 
 const D = 'dev'
-const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'deviceId'>) =>
-  createActionItem({ ...o, deviceId: D })
+const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'clientId'>) =>
+  createActionItem({ ...o, clientId: D })
 
 describe('compareActionItems', () => {
   it('sorts by bumpCount DESC first', () => {
@@ -63,9 +63,9 @@ describe('compareActionItems', () => {
 
 describe('compareProjects / compareGoals', () => {
   it('projects: bumpCount DESC then name ASC', () => {
-    const a = createProject({ deviceId: D, name: 'Banana', bumpCount: 2 })
-    const b = createProject({ deviceId: D, name: 'Apple', bumpCount: 2 })
-    const c = createProject({ deviceId: D, name: 'Cherry', bumpCount: 9 })
+    const a = createProject({ clientId: D, name: 'Banana', bumpCount: 2 })
+    const b = createProject({ clientId: D, name: 'Apple', bumpCount: 2 })
+    const c = createProject({ clientId: D, name: 'Cherry', bumpCount: 9 })
     expect([a, b, c].sort(compareProjects).map((x) => x.name)).toEqual([
       'Cherry',
       'Apple',
@@ -74,8 +74,8 @@ describe('compareProjects / compareGoals', () => {
   })
 
   it('goals: bumpCount DESC then name ASC', () => {
-    const a = createGoal({ deviceId: D, name: 'Zeta', bumpCount: 0 })
-    const b = createGoal({ deviceId: D, name: 'Alpha', bumpCount: 0 })
+    const a = createGoal({ clientId: D, name: 'Zeta', bumpCount: 0 })
+    const b = createGoal({ clientId: D, name: 'Alpha', bumpCount: 0 })
     expect([a, b].sort(compareGoals).map((x) => x.name)).toEqual(['Alpha', 'Zeta'])
   })
 })
@@ -83,19 +83,19 @@ describe('compareProjects / compareGoals', () => {
 describe('compareQuestions', () => {
   it('bumpCount DESC then createdAt ASC', () => {
     const a = createQuestion({
-      deviceId: D,
+      clientId: D,
       name: 'a',
       bumpCount: 1,
       createdAt: '2026-02-01T00:00:00Z'
     })
     const b = createQuestion({
-      deviceId: D,
+      clientId: D,
       name: 'b',
       bumpCount: 1,
       createdAt: '2026-01-01T00:00:00Z'
     })
     const c = createQuestion({
-      deviceId: D,
+      clientId: D,
       name: 'c',
       bumpCount: 9,
       createdAt: '2026-03-01T00:00:00Z'

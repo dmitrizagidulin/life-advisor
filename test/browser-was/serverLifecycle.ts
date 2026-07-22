@@ -4,14 +4,14 @@
  * and tear the server down afterwards. globalSetup and globalTeardown run in the
  * same Playwright runner process, so the child handle is stashed on `globalThis`.
  *
- * The was-teaching-server checkout is READ-ONLY and run as-is (`tsx src/start.ts`);
- * we only set its SERVER_URL / PORT env, which MUST match the URL the client
- * builds from the granted zcaps' invocationTargets.
+ * The server comes from the `was-teaching-server` npm package (a devDependency
+ * of this app), booted via `test/lib/startWasServer.ts` with its state in the
+ * git-ignored `.e2e/was-data` (wiped on every boot) -- no server checkout is
+ * needed. SERVER_URL / PORT MUST match the URL the client builds from the
+ * granted zcaps' invocationTargets.
  */
-import { spawn, type ChildProcess } from 'node:child_process'
-import { execFile } from 'node:child_process'
+import { spawn, execFile, type ChildProcess } from 'node:child_process'
 import { promisify } from 'node:util'
-import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -22,9 +22,6 @@ const repoRoot = join(here, '..', '..')
 
 export const WAS_PORT = Number(process.env.WAS_E2E_PORT ?? 3102)
 export const WAS_SERVER_URL = `http://localhost:${WAS_PORT}`
-export const WAS_SERVER_DIR =
-  process.env.WAS_SERVER_DIR ??
-  join(homedir(), 'code', 'Interop', 'was-teaching-server')
 
 const HANDLE_KEY = Symbol.for('life-advisor.was-e2e.server')
 
@@ -57,17 +54,21 @@ async function waitForServer(timeoutMs = 20000): Promise<void> {
 
 /** Boots the server and runs the provisioning script. Called by globalSetup. */
 export async function startServerAndProvision(): Promise<void> {
-  const child = spawn('npx', ['tsx', 'src/start.ts'], {
-    cwd: WAS_SERVER_DIR,
-    env: {
-      ...process.env,
-      SERVER_URL: WAS_SERVER_URL,
-      PORT: String(WAS_PORT),
-      STORAGE_LIMIT_PER_SPACE: 'unlimited'
-    },
-    detached: true,
-    stdio: 'ignore'
-  })
+  const child = spawn(
+    'npx',
+    ['tsx', join('test', 'lib', 'startWasServer.ts')],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        SERVER_URL: WAS_SERVER_URL,
+        PORT: String(WAS_PORT),
+        DATA_DIR: join('.e2e', 'was-data')
+      },
+      detached: true,
+      stdio: 'ignore'
+    }
+  )
   child.unref()
   stash().child = child
 

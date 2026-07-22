@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createWebLink } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import {
   EntityFormShell,
@@ -42,7 +42,7 @@ export function WebLinkFormPage({ mode }: { mode: 'new' | 'edit' }) {
           url: url.trim(),
           name: name.trim() || undefined,
           description: description.trim() || undefined,
-          deviceId: getDeviceId()
+          clientId: getClientId()
         }),
       buildEdit: () => ({
         ...existing!,

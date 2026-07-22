@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createThought } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useThoughts } from '@/stores/entities/thoughts'
 import {
   EntityFormShell,
@@ -34,7 +34,7 @@ export function ThoughtFormPage({ mode }: { mode: 'new' | 'edit' }) {
       mode,
       insert,
       update,
-      buildNew: () => createThought({ name: name.trim(), deviceId: getDeviceId() }),
+      buildNew: () => createThought({ name: name.trim(), clientId: getClientId() }),
       buildEdit: () => ({ ...existing!, name: name.trim(), updatedAt: nowIso() })
     })
     navigate('/thoughts')

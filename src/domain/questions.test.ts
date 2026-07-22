@@ -7,8 +7,8 @@ import { createQuestion } from './factories'
 
 const D = 'dev'
 const NOW = '2026-07-06T12:00:00.000Z'
-const q = (o: Omit<Parameters<typeof createQuestion>[0], 'deviceId'>) =>
-  createQuestion({ ...o, deviceId: D })
+const q = (o: Omit<Parameters<typeof createQuestion>[0], 'clientId'>) =>
+  createQuestion({ ...o, clientId: D })
 
 describe('setAnswered', () => {
   it('sets answered and stamps answeredAt', () => {

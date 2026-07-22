@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import { Box, Button, TextField } from '@mui/material'
 import { createThought } from '@/domain/factories'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useThoughts } from '@/stores/entities/thoughts'
 
 export function NewThoughtBox() {
@@ -17,7 +17,7 @@ export function NewThoughtBox() {
     if (name === '') {
       return
     }
-    await insert(createThought({ name, deviceId: getDeviceId() }))
+    await insert(createThought({ name, clientId: getClientId() }))
     setText('')
   }
 

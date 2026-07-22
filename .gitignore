@@ -76,6 +76,9 @@ dist
 playwright-report/
 test-results/
 
+# e2e server state (was-teaching-server data dirs, wiped on each boot)
+.e2e/
+
 # Vite
 .vite/
 

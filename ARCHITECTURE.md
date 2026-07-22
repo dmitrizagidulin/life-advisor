@@ -70,39 +70,42 @@ silently derives different DIDs and KAKs for different consumers.
 
 ## Authentication: Login With Wallet (CHAPI)
 
-The app is a CHAPI relying party. Login is driven by Verifiable Presentation
-Requests (VPRs) combining DIDAuthentication, QueryByExample (for the
-LifeAdvisorKey credential), and AuthorizationCapabilityQuery (for the WAS
-zcaps). There are three entry paths:
+The app is a CHAPI relying party. Login is the one-popup "App Connect"
+ceremony: a single CHAPI `get` carries a Verifiable Presentation Request
+combining DIDAuthentication with an `AppConnectQuery` (naming the
+LifeAdvisorKey credential type and one capability query per collection), and
+the wallet answers with the credential plus the delegated WAS zcaps in one
+signed response. The entry paths:
 
-### First login (no seed anywhere)
+### Login (first run and returning, one popup)
 
 1. Load the CHAPI polyfill (authn.io mediator).
-2. Probe with a VPR asking for DIDAuthentication plus the LifeAdvisorKey
-   credential. No credential returned means this is a first run.
-3. Generate 32 random bytes; derive the controller DID and a ZcapClient. (The
-   per-collection KAKs are derived later, where consumed -- at local-store
-   init.)
-4. Self-issue the LifeAdvisorKey credential and store it into the wallet.
-   First-run completion blocks until the store succeeds -- otherwise cross-device
-   recovery would be silently broken.
-5. Request grants: a VPR with one capability query per collection (allowing GET,
-   HEAD, PUT, POST, DELETE against `{type:'urn:was:collection', name}`) plus a
-   read-only space grant. The wallet provisions the collections and returns a
-   signed presentation with zcaps delegated to the controller DID, rooted at the
-   space's root capability.
-6. Verify the response (see below); parse the server URL and space id from a
-   grant's invocation target; assert all grants share one space under the
-   configured WAS host.
-7. Build the WAS client, per-collection document ciphers, and RxDB; start sync.
-8. Persist the session record and enter the app.
+2. Send the App Connect VPR: DIDAuthentication plus the LifeAdvisorKey
+   credential and one capability query per collection (allowing GET, HEAD,
+   PUT, POST, DELETE against `{type:'urn:was:collection', name}`).
+3. In the same round, the wallet matches an existing app key or -- on first
+   run -- mints the 32-byte seed and self-issues the same-shaped credential
+   (marking the response `firstRun`), provisions the collections, and returns
+   the credential plus zcaps delegated to the seed-derived controller DID in
+   one signed presentation. There is no separate store popup and no separate
+   grants popup. A wallet that predates App Connect returns no app-key
+   credential, which fails closed as `WalletUnsupportedError` -- distinct from
+   a user cancel (a null CHAPI response).
+4. Verify the response (see below); recover the seed and derive the controller
+   DID (the per-collection KAKs are derived later, where consumed -- at
+   local-store init); parse the server URL and space id from a grant's
+   invocation target and assert all grants share one space. There is no
+   configured WAS host -- the wallet decides where the space lives.
+5. Build the WAS client, per-collection document ciphers, and RxDB; start
+   sync. Any data created in the anonymous local-first session is adopted into
+   the connected replica (last-write-wins merge by logical id).
+6. Persist the session record and enter the app.
 
-### Returning login (new device or cleared storage)
-
-The probe returns the LifeAdvisorKey. Verify it is self-issued and that its
-`origin` matches the current origin, extract the seed, and re-derive the same
-controller DID. Request grants again to that DID, verify, build, persist, enter.
-Because the DID and KAKs are stable, previously stored data remains readable.
+On a returning login (new device or cleared storage) the same popup returns
+the existing credential: verify it is self-issued and that its `origin`
+matches the current origin, extract the seed, and re-derive the same
+controller DID with fresh grants. Because the DID and KAKs are stable,
+previously stored data remains readable.
 
 ### Hot restore (seed persisted locally, zero popups)
 
@@ -110,8 +113,10 @@ The session record `{controllerDid, serverUrl, spaceId, grants, expires}` is
 read from local IndexedDB, with the seed persisted under a separate key in the
 same store (`expires` is the earliest expiry across the granted zcaps). If
 present and unexpired, agents, the WAS client, and ciphers are rebuilt from the
-stored zcaps with no wallet interaction. If missing or expired, the flow falls
-through to returning login.
+stored zcaps with no wallet interaction. A restore miss or failure lands in the
+anonymous `local` session state -- with local-first onboarding the app renders
+over the anonymous local replica; with login-gated onboarding the router
+redirects to the login page. Either way, never a dead login screen.
 
 ### Relying-party verification contract
 
@@ -230,7 +235,7 @@ sorting and conflict resolution.
 - **Delete.** Tombstone the row (a soft delete) so the deletion replicates.
 - **Conflict.** A 412 maps to a sync-conflict error; the resolver re-reads the
   current head and applies last-writer-wins by payload `updatedAt` (ISO lexical
-  compare), with a per-install random `deviceId` as tiebreaker.
+  compare), with a per-install random `clientId` as tiebreaker.
 
 ### Replication
 
@@ -328,14 +333,15 @@ layer and UI.
 
 ```
 src/
-  app.config.ts        WAS host, app origin, collection registry, and the
-                       assembled WasAppConfig handed to @interop/was-react
+  app.config.ts        app origin, onboarding mode, collection registry, and
+                       the assembled WasAppConfig handed to @interop/was-react
   main.tsx / App.tsx   WasSessionProvider + HashRouter + lazy routes
   types/domain.ts      entity payload interfaces + enums
   stores/              the app-side storage glue: the collection-to-store
                        registry, per-entity zustand stores over the library's
-                       createEntityStore, cross-store entity actions, export,
-                       and the dev-mode bootstrap / dev-sync harness
+                       createEntityStore, cross-store entity actions, export
+  dev/                 the fixed dev seed and the CHAPI-bypass dev connect
+                       harness (provisioned grants + connectWithGrants)
   domain/              pure, unit-tested domain logic (sort, actionItems,
                        projects, goals, questions, webLinks, focus, history,
                        parent, queries, factories)

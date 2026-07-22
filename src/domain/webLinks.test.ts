@@ -8,8 +8,8 @@ import { createActionItem, createWebLink } from './factories'
 const D = 'dev'
 const NOW = '2026-07-06T12:00:00.000Z'
 const TODAY = '2026-07-06'
-const link = (o: Omit<Parameters<typeof createWebLink>[0], 'deviceId'>) =>
-  createWebLink({ ...o, deviceId: D }, NOW, undefined, TODAY)
+const link = (o: Omit<Parameters<typeof createWebLink>[0], 'clientId'>) =>
+  createWebLink({ ...o, clientId: D }, NOW, undefined, TODAY)
 
 describe('nameDisplay', () => {
   it('returns the name when present', () => {
@@ -38,7 +38,7 @@ describe('toActionItem', () => {
       parentKey: TODAY
     })
     const { item, link: child, deleteWebLinkId } = toActionItem(original, {
-      deviceId: D,
+      clientId: D,
       now: NOW,
       itemId: 'item-1',
       linkId: 'link-1'
@@ -57,18 +57,18 @@ describe('toActionItem', () => {
 describe('fromActionItem', () => {
   it('creates a link from the item and its first link, deleting item and links', () => {
     const item = createActionItem(
-      { deviceId: D, name: 'A task', parentType: 'day', parentKey: TODAY },
+      { clientId: D, name: 'A task', parentType: 'day', parentKey: TODAY },
       NOW,
       'item-1'
     )
     const l1 = createWebLink(
-      { deviceId: D, url: 'https://x.com/first', parentType: 'action_item', parentKey: 'item-1' },
+      { clientId: D, url: 'https://x.com/first', parentType: 'action_item', parentKey: 'item-1' },
       NOW,
       'l1',
       TODAY
     )
     const l2 = createWebLink(
-      { deviceId: D, url: 'https://x.com/second', parentType: 'action_item', parentKey: 'item-1' },
+      { clientId: D, url: 'https://x.com/second', parentType: 'action_item', parentKey: 'item-1' },
       NOW,
       'l2',
       TODAY
@@ -76,7 +76,7 @@ describe('fromActionItem', () => {
     const { link: newLink, deleteActionItemId, deleteWebLinkIds } = fromActionItem(
       item,
       [l1, l2],
-      { deviceId: D, now: NOW }
+      { clientId: D, now: NOW }
     )
     expect(newLink.name).toBe('A task')
     expect(newLink.url).toBe('https://x.com/first')
@@ -87,16 +87,16 @@ describe('fromActionItem', () => {
   })
 
   it('throws when the item has no links', () => {
-    const item = createActionItem({ deviceId: D, name: 'x' }, NOW)
-    expect(() => fromActionItem(item, [], { deviceId: D })).toThrow()
+    const item = createActionItem({ clientId: D, name: 'x' }, NOW)
+    expect(() => fromActionItem(item, [], { clientId: D })).toThrow()
   })
 })
 
 describe('link/item round trip', () => {
   it('preserves the url through toActionItem then fromActionItem', () => {
     const original = link({ name: 'orig', url: 'https://x.com/keep', parentType: 'day', parentKey: TODAY })
-    const forward = toActionItem(original, { deviceId: D, now: NOW, itemId: 'item-1' })
-    const back = fromActionItem(forward.item, [forward.link], { deviceId: D, now: NOW })
+    const forward = toActionItem(original, { clientId: D, now: NOW, itemId: 'item-1' })
+    const back = fromActionItem(forward.item, [forward.link], { clientId: D, now: NOW })
     expect(back.link.url).toBe('https://x.com/keep')
     expect(back.link.name).toBe('orig')
   })

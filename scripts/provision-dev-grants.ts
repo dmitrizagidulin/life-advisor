@@ -20,13 +20,14 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { provisionDevGrants } from '@interop/was-react/dev'
 import { LA_COLLECTIONS } from '../src/app.config.ts'
-import { DEV_SEED } from '../src/stores/devSeed.ts'
+import { DEV_SEED } from '../src/dev/devSeed.ts'
 
 const SERVER_URL = process.env.SERVER_URL ?? 'http://localhost:3002'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = dirname(scriptDir)
 const OUT_PATH =
-  process.env.DEV_GRANTS_OUT ?? join(repoRoot, 'public', 'dev-grants.local.json')
+  process.env.DEV_GRANTS_OUT ??
+  join(repoRoot, 'public', 'dev-grants.local.json')
 
 // A fixed, distinct provisioner seed -- the "wallet" that owns the dev Space.
 // Kept separate from DEV_SEED (the app / relying party) so the delegation is a
@@ -47,12 +48,12 @@ async function main(): Promise<void> {
     outFile: OUT_PATH,
     provisionerSeed: PROVISIONER_SEED,
     probe: true,
-    log: (msg) => console.log(msg)
+    log: msg => console.log(msg)
   })
   console.log(`\nWrote ${result.grants.length} grants to ${OUT_PATH}`)
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('Provisioning failed:', err)
   process.exit(1)
 })

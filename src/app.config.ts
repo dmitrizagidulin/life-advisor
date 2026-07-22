@@ -16,21 +16,14 @@ const env: Record<string, string | undefined> =
 // anti-phishing origin binding on the app-key credential.
 export const APP_ORIGIN = env.VITE_APP_ORIGIN || 'http://localhost:5173'
 
-// Auth mode: 'dev' (default) boots straight into the local dev-seed store with
-// no login gate (offline behavior, optionally dev-syncing under WAS_DEV_SYNC);
-// 'wallet' gates the app behind Login With Wallet (CHAPI).
+// Auth mode: 'dev' (default) boots straight into the local anonymous replica
+// with no login gate (local-first, optionally dev-syncing under WAS_DEV_SYNC);
+// 'wallet' gates the app behind Login With Wallet (CHAPI). It maps onto the
+// library's `onboarding` mode below.
 export const AUTH_MODE: 'dev' | 'wallet' =
   env.VITE_AUTH_MODE === 'wallet' ? 'wallet' : 'dev'
 
-// CHAPI mediator base; the requesting origin is appended at load time.
-export const MEDIATOR_BASE = 'https://authn.io/mediator?origin='
-
-// Remote WAS server URL. When set, a remote WAS Space is available as a sync
-// target. In wallet mode this is the expected host of every granted zcap's
-// invocationTarget (grants pointing anywhere else are rejected at login).
-export const WAS_SERVER_URL = env.VITE_WAS_SERVER_URL
-
-// Dev-sync mode (P2, CHAPI bypassed): when truthy, the app loads a locally
+// Dev-sync mode (CHAPI bypassed): when truthy, the app loads a locally
 // provisioned grants file and replicates to a running was-teaching-server using
 // the dev seed's delegated zcaps. Off by default (offline-only).
 export const WAS_DEV_SYNC =
@@ -86,23 +79,22 @@ export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
  * the auth store, and the dev harness all read from here).
  *
  * PINNED values -- part of this app's stored-data contract, never change them:
- * `credential` names the seed VC type the wallet already holds; `dbName`
- * reproduces the pre-library per-controller IndexedDB names (and the
- * `life-advisor-session` seed store); `storageKeyPrefix` keeps the persisted
- * `la:deviceId` localStorage key (the LWW tiebreak identity of this device).
+ * `credential` names the seed VC type the wallet holds, and `dbName` names the
+ * local RxDB database. Changing either orphans existing identities and data.
  */
 export const WAS_APP_CONFIG: WasAppConfig = {
   appName: 'Life Advisor',
   appOrigin: APP_ORIGIN,
-  ...(WAS_SERVER_URL && { wasServerUrl: WAS_SERVER_URL }),
-  mediatorBase: MEDIATOR_BASE,
+  // Wallet mode gates the app behind login; dev mode is local-first (a usable
+  // anonymous replica with no login gate). Only affects the router's rendering,
+  // never the store's transitions.
+  onboarding: AUTH_MODE === 'wallet' ? 'login-gated' : 'local-first',
   collections: [...LA_COLLECTIONS],
   credential: {
     credentialType: 'LifeAdvisorKey',
     vocabBase: 'urn:life-advisor:vocab#'
   },
   dbName: 'life-advisor',
-  storageKeyPrefix: 'la:',
   sync: {
     ...(WAS_SYNC_BATCH_SIZE !== undefined && {
       batchSize: WAS_SYNC_BATCH_SIZE

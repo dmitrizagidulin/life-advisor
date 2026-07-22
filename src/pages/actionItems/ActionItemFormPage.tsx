@@ -14,7 +14,7 @@ import { MYWN_CATEGORIES } from '@/types/domain'
 import { createActionItem, createWebLink } from '@/domain/factories'
 import { enforceCompletedAt } from '@/domain/actionItems'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { AreaSelect } from '@/components/AreaSelect'
@@ -67,7 +67,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
             area,
             done,
             timeElapsed: hours,
-            deviceId: getDeviceId()
+            clientId: getClientId()
           })
         ),
       buildEdit: () =>
@@ -88,7 +88,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
               url: url.trim(),
               parentType: 'action_item',
               parentKey: item.id,
-              deviceId: getDeviceId()
+              clientId: getClientId()
             })
           )
         }

@@ -42,7 +42,7 @@ export function nameDisplay(link: WebLinkDoc): string {
 export function toActionItem(
   link: WebLinkDoc,
   opts: {
-    deviceId: string
+    clientId: string
     now?: string
     itemId?: string
     linkId?: string
@@ -56,7 +56,7 @@ export function toActionItem(
       name: link.name ?? '',
       parentType: link.parentType,
       parentKey: link.parentKey,
-      deviceId: opts.deviceId
+      clientId: opts.clientId
     },
     now,
     opts.itemId
@@ -67,7 +67,7 @@ export function toActionItem(
       url: link.url,
       parentType: 'action_item',
       parentKey: item.id,
-      deviceId: opts.deviceId
+      clientId: opts.clientId
     },
     now,
     opts.linkId,
@@ -85,7 +85,7 @@ export function toActionItem(
 export function fromActionItem(
   item: ActionItemDoc,
   links: WebLinkDoc[],
-  opts: { deviceId: string; now?: string; linkId?: string; today?: string }
+  opts: { clientId: string; now?: string; linkId?: string; today?: string }
 ): {
   link: WebLinkDoc
   deleteActionItemId: string
@@ -102,7 +102,7 @@ export function fromActionItem(
       url: first.url,
       parentType: item.parentType,
       parentKey: item.parentKey,
-      deviceId: opts.deviceId
+      clientId: opts.clientId
     },
     now,
     opts.linkId,

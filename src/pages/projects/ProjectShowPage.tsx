@@ -28,7 +28,7 @@ import {
   sortActionItemsCompletedDesc
 } from '@/domain/sort'
 import { formatTimestamp } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
@@ -89,7 +89,7 @@ export function ProjectShowPage() {
         name: questionName.trim(),
         parentType: 'project',
         parentKey: project!.id,
-        deviceId: getDeviceId()
+        clientId: getClientId()
       })
     )
     setQuestionName('')
@@ -105,7 +105,7 @@ export function ProjectShowPage() {
       area: project!.area,
       parentType: 'project',
       parentKey: project!.id,
-      deviceId: getDeviceId()
+      clientId: getClientId()
     })
     await insertItem(item)
     if (itemUrl.trim() !== '') {
@@ -114,7 +114,7 @@ export function ProjectShowPage() {
           url: itemUrl.trim(),
           parentType: 'action_item',
           parentKey: item.id,
-          deviceId: getDeviceId()
+          clientId: getClientId()
         })
       )
     }

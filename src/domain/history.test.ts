@@ -10,8 +10,8 @@ const D = 'dev'
 // regardless of the machine timezone.
 const localIso = (y: number, m: number, d: number, h = 10) =>
   new Date(y, m - 1, d, h).toISOString()
-const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'deviceId'>) =>
-  createActionItem({ ...o, deviceId: D })
+const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'clientId'>) =>
+  createActionItem({ ...o, clientId: D })
 
 describe('completedSameDay', () => {
   it('true when created and completed on the same local day', () => {

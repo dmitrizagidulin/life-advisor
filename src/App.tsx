@@ -1,10 +1,16 @@
 /**
- * App root: theme + CssBaseline, the HashRouter, and the lazy-loaded route table
- * (plan section 6). The auth pages sit outside the hydration gate; everything
- * else renders inside `ProtectedRoute` (waits for hydration) and the `AppShell`
- * layout.
+ * App root: theme + CssBaseline, the HashRouter, and the lazy-loaded route
+ * table. The login page sits outside the gate; everything else renders behind
+ * the library's `ProtectedRoute` (from `@interop/was-react/mui`) -- a thin
+ * onboarding switch that renders the app in local-first mode and gates on a
+ * connected wallet in login-gated mode -- inside the `AppShell` layout.
+ *
+ * When dev-connect is on (`WAS_DEV_SYNC`), `DevConnect` drives the store's
+ * non-CHAPI `connectWithGrants` path once the anonymous local replica is open,
+ * so the app reaches the same `connected` sync path a wallet login drives --
+ * adopting (merging) any data already in the local replica as it connects.
  */
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { HashRouter, Route, Routes } from 'react-router'
 import {
   Box,
@@ -12,12 +18,12 @@ import {
   CssBaseline,
   ThemeProvider
 } from '@mui/material'
-import { WasSessionProvider } from '@interop/was-react'
-import { WAS_APP_CONFIG } from '@/app.config'
+import { useAuthStore, useSession } from '@interop/was-react'
+import { ProtectedRoute } from '@interop/was-react/mui'
+import { WAS_DEV_SYNC } from '@/app.config'
 import { theme } from '@/themes/theme'
-import { COLLECTION_REGISTRY } from '@/stores/collectionRegistry'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppShell } from '@/components/AppShell'
+import { runDevConnect } from '@/dev/devConnect'
 
 const DashboardPage = lazy(() =>
   import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage }))
@@ -137,9 +143,6 @@ const HistoryPage = lazy(() =>
 const LoginPage = lazy(() =>
   import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage }))
 )
-const LogoutPage = lazy(() =>
-  import('@/pages/auth/LogoutPage').then(m => ({ default: m.LogoutPage }))
-)
 
 function Loading() {
   return (
@@ -149,120 +152,138 @@ function Loading() {
   )
 }
 
+/**
+ * Dev-only: once boot has landed the anonymous `local` replica, connect under
+ * the provisioned dev grants. A no-op render; fires once via `runDevConnect`'s
+ * own guard.
+ */
+function DevConnect() {
+  const store = useAuthStore()
+  const { status } = useSession()
+
+  useEffect(() => {
+    if (status !== 'local') {
+      return
+    }
+    // Deferred + cancelable: StrictMode's mount/unmount/mount fires the
+    // provider's boot -> destroy -> boot chain, and the first boot's `local`
+    // must not launch a connect that races the second boot's re-opened
+    // replica (each open replica holds every collection open, and RxDB caps
+    // process-wide open collections). The destroy's flip back to `boot`
+    // cancels the timer; only a `local` that stays settled connects.
+    const timer = setTimeout(() => void runDevConnect(store), 250)
+    return () => clearTimeout(timer)
+  }, [store, status])
+
+  return null
+}
+
 export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <WasSessionProvider
-        config={WAS_APP_CONFIG}
-        registry={COLLECTION_REGISTRY}
-      >
-        <HashRouter>
-          <Suspense fallback={<Loading />}>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/logout" element={<LogoutPage />} />
-              <Route element={<ProtectedRoute />}>
-                <Route element={<AppShell />}>
-                  <Route index element={<DashboardPage />} />
-                  <Route
-                    path="action-items/all"
-                    element={<ActionItemsAllPage />}
-                  />
-                  <Route
-                    path="action-items/completed"
-                    element={<ActionItemsCompletedPage />}
-                  />
-                  <Route
-                    path="action-items/new"
-                    element={<ActionItemFormPage mode="new" />}
-                  />
-                  <Route
-                    path="action-items/:id"
-                    element={<ActionItemShowPage />}
-                  />
-                  <Route
-                    path="action-items/:id/edit"
-                    element={<ActionItemFormPage mode="edit" />}
-                  />
-                  <Route path="projects" element={<ProjectsIndexPage />} />
-                  <Route
-                    path="projects/completed"
-                    element={<ProjectsStatusPage status="completed" />}
-                  />
-                  <Route
-                    path="projects/canceled"
-                    element={<ProjectsStatusPage status="canceled" />}
-                  />
-                  <Route
-                    path="projects/new"
-                    element={<ProjectFormPage mode="new" />}
-                  />
-                  <Route path="projects/:id" element={<ProjectShowPage />} />
-                  <Route
-                    path="projects/:id/edit"
-                    element={<ProjectFormPage mode="edit" />}
-                  />
-                  <Route
-                    path="projects/:id/set-goals"
-                    element={<ProjectSetGoalsPage />}
-                  />
-                  <Route path="goals" element={<GoalsIndexPage />} />
-                  <Route
-                    path="goals/new"
-                    element={<GoalFormPage mode="new" />}
-                  />
-                  <Route path="goals/:id" element={<GoalShowPage />} />
-                  <Route
-                    path="goals/:id/edit"
-                    element={<GoalFormPage mode="edit" />}
-                  />
-                  <Route path="questions" element={<QuestionsIndexPage />} />
-                  <Route
-                    path="questions/new"
-                    element={<QuestionFormPage mode="new" />}
-                  />
-                  <Route path="questions/:id" element={<QuestionShowPage />} />
-                  <Route
-                    path="questions/:id/edit"
-                    element={<QuestionFormPage mode="edit" />}
-                  />
-                  <Route
-                    path="answers/new"
-                    element={<AnswerFormPage mode="new" />}
-                  />
-                  <Route
-                    path="answers/:id/edit"
-                    element={<AnswerFormPage mode="edit" />}
-                  />
-                  <Route path="thoughts" element={<ThoughtsIndexPage />} />
-                  <Route
-                    path="thoughts/new"
-                    element={<ThoughtFormPage mode="new" />}
-                  />
-                  <Route path="thoughts/:id" element={<ThoughtShowPage />} />
-                  <Route
-                    path="thoughts/:id/edit"
-                    element={<ThoughtFormPage mode="edit" />}
-                  />
-                  <Route path="web-links" element={<WebLinksIndexPage />} />
-                  <Route
-                    path="web-links/new"
-                    element={<WebLinkFormPage mode="new" />}
-                  />
-                  <Route path="web-links/:id" element={<WebLinkShowPage />} />
-                  <Route
-                    path="web-links/:id/edit"
-                    element={<WebLinkFormPage mode="edit" />}
-                  />
-                  <Route path="focus/:area" element={<FocusAreaPage />} />
-                  <Route path="history" element={<HistoryPage />} />
-                </Route>
+      {WAS_DEV_SYNC && <DevConnect />}
+      <HashRouter>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route element={<ProtectedRoute loginPath="/login" />}>
+              <Route element={<AppShell />}>
+                <Route index element={<DashboardPage />} />
+                <Route
+                  path="action-items/all"
+                  element={<ActionItemsAllPage />}
+                />
+                <Route
+                  path="action-items/completed"
+                  element={<ActionItemsCompletedPage />}
+                />
+                <Route
+                  path="action-items/new"
+                  element={<ActionItemFormPage mode="new" />}
+                />
+                <Route
+                  path="action-items/:id"
+                  element={<ActionItemShowPage />}
+                />
+                <Route
+                  path="action-items/:id/edit"
+                  element={<ActionItemFormPage mode="edit" />}
+                />
+                <Route path="projects" element={<ProjectsIndexPage />} />
+                <Route
+                  path="projects/completed"
+                  element={<ProjectsStatusPage status="completed" />}
+                />
+                <Route
+                  path="projects/canceled"
+                  element={<ProjectsStatusPage status="canceled" />}
+                />
+                <Route
+                  path="projects/new"
+                  element={<ProjectFormPage mode="new" />}
+                />
+                <Route path="projects/:id" element={<ProjectShowPage />} />
+                <Route
+                  path="projects/:id/edit"
+                  element={<ProjectFormPage mode="edit" />}
+                />
+                <Route
+                  path="projects/:id/set-goals"
+                  element={<ProjectSetGoalsPage />}
+                />
+                <Route path="goals" element={<GoalsIndexPage />} />
+                <Route path="goals/new" element={<GoalFormPage mode="new" />} />
+                <Route path="goals/:id" element={<GoalShowPage />} />
+                <Route
+                  path="goals/:id/edit"
+                  element={<GoalFormPage mode="edit" />}
+                />
+                <Route path="questions" element={<QuestionsIndexPage />} />
+                <Route
+                  path="questions/new"
+                  element={<QuestionFormPage mode="new" />}
+                />
+                <Route path="questions/:id" element={<QuestionShowPage />} />
+                <Route
+                  path="questions/:id/edit"
+                  element={<QuestionFormPage mode="edit" />}
+                />
+                <Route
+                  path="answers/new"
+                  element={<AnswerFormPage mode="new" />}
+                />
+                <Route
+                  path="answers/:id/edit"
+                  element={<AnswerFormPage mode="edit" />}
+                />
+                <Route path="thoughts" element={<ThoughtsIndexPage />} />
+                <Route
+                  path="thoughts/new"
+                  element={<ThoughtFormPage mode="new" />}
+                />
+                <Route path="thoughts/:id" element={<ThoughtShowPage />} />
+                <Route
+                  path="thoughts/:id/edit"
+                  element={<ThoughtFormPage mode="edit" />}
+                />
+                <Route path="web-links" element={<WebLinksIndexPage />} />
+                <Route
+                  path="web-links/new"
+                  element={<WebLinkFormPage mode="new" />}
+                />
+                <Route path="web-links/:id" element={<WebLinkShowPage />} />
+                <Route
+                  path="web-links/:id/edit"
+                  element={<WebLinkFormPage mode="edit" />}
+                />
+                <Route path="focus/:area" element={<FocusAreaPage />} />
+                <Route path="history" element={<HistoryPage />} />
               </Route>
-            </Routes>
-          </Suspense>
-        </HashRouter>
-      </WasSessionProvider>
+            </Route>
+          </Routes>
+        </Suspense>
+      </HashRouter>
     </ThemeProvider>
   )
 }

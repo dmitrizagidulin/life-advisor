@@ -16,10 +16,17 @@ import {
   Toolbar,
   Typography
 } from '@mui/material'
+import { useSession } from '@interop/was-react'
+import {
+  ClearDataDialog,
+  LogoutDialog,
+  ReconnectBanner,
+  SyncStatusChip
+} from '@interop/was-react/mui'
 import { AREAS } from '@/types/domain'
 import { downloadExportBundle } from '@/stores/exportAll'
 import { CurrentFocusBanner } from './CurrentFocusBanner'
-import { ReconnectBanner, SyncStatusChip } from '@interop/was-react/mui'
+import { SyncErrorDiagnostics } from './SyncErrorDiagnostics'
 
 const NAV: Array<{ label: string; to: string }> = [
   { label: 'Dashboard', to: '/' },
@@ -34,7 +41,11 @@ const NAV: Array<{ label: string; to: string }> = [
 
 export function AppShell() {
   const location = useLocation()
+  const { status } = useSession()
   const [focusAnchor, setFocusAnchor] = useState<null | HTMLElement>(null)
+  const [logoutOpen, setLogoutOpen] = useState(false)
+  const [clearOpen, setClearOpen] = useState(false)
+  const connected = status === 'connected' || status === 'reconnect'
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -104,23 +115,36 @@ export function AppShell() {
             >
               Export
             </Button>
-            <Button
-              component={RouterLink}
-              to="/logout"
-              color="inherit"
-              size="small"
-              data-testid="nav-logout"
-            >
-              Logout
-            </Button>
+            {connected ? (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => setLogoutOpen(true)}
+                data-testid="nav-logout"
+              >
+                Log out
+              </Button>
+            ) : (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => setClearOpen(true)}
+                data-testid="clear-data-button"
+              >
+                Clear data
+              </Button>
+            )}
           </Stack>
         </Toolbar>
       </AppBar>
       <Container maxWidth="lg" sx={{ py: 3 }}>
+        <SyncErrorDiagnostics />
         <ReconnectBanner />
         <CurrentFocusBanner />
         <Outlet />
       </Container>
+      <LogoutDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
+      <ClearDataDialog open={clearOpen} onClose={() => setClearOpen(false)} />
     </Box>
   )
 }

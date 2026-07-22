@@ -9,7 +9,7 @@ import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { createQuestion } from '@/domain/factories'
 import { splitByProject } from '@/domain/questions'
 import { compareQuestions } from '@/domain/sort'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useQuestions } from '@/stores/entities/questions'
 import { QuestionList } from '@/components/QuestionList'
 
@@ -23,7 +23,7 @@ export function QuestionsIndexPage() {
     if (name.trim() === '') {
       return
     }
-    await insert(createQuestion({ name: name.trim(), deviceId: getDeviceId() }))
+    await insert(createQuestion({ name: name.trim(), clientId: getClientId() }))
     setName('')
   }
 

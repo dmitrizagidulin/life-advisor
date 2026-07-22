@@ -9,7 +9,7 @@ import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { createProject } from '@/domain/factories'
 import { allForStatus } from '@/domain/queries'
 import { compareProjects } from '@/domain/sort'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { ProjectListTable } from '@/components/ProjectListTable'
 
@@ -23,7 +23,7 @@ export function ProjectsIndexPage() {
       return
     }
     await insert(
-      createProject({ name: name.trim(), area: 'soul', deviceId: getDeviceId() })
+      createProject({ name: name.trim(), area: 'soul', clientId: getClientId() })
     )
     setName('')
   }

@@ -17,12 +17,12 @@
     "test:browser:wallet": "playwright test -c playwright.wallet.config.ts",
     "test:node": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "provision:dev": "npx tsx scripts/provision-dev-grants.ts"
+    "provision:dev": "tsx scripts/provision-dev-grants.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@interop/was-react": "^0.1.5",
+    "@interop/was-react": "^0.3.4",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
     "react": "^19.2.4",
@@ -45,10 +45,12 @@
     "fake-indexeddb": "^6.0.0",
     "globals": "^17.6.0",
     "prettier": "^3.8.3",
+    "tsx": "^4.20.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.4",
     "vite": "^8.0.14",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.7",
+    "was-teaching-server": "^0.13.0"
   },
   "packageManager": "pnpm@11.5.0",
   "engines": {

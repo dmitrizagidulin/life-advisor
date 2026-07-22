@@ -1,19 +1,26 @@
 /**
  * Login page. Wallet mode: the real "Login With Wallet" (CHAPI) entry point --
- * first login stores the app key in the wallet and requests storage grants;
- * a returning login recovers the key and re-grants. Dev mode keeps the
- * offline placeholder (the app is always "logged in" against the dev seed).
+ * one button driving the library's login flow, a progress line per phase, and
+ * an error alert; a connected visitor is bounced straight to the app. If the
+ * anonymous `local` replica already holds data (a `useHasLocalData` check at
+ * click time), the button opens the library's `AdoptDialog` -- which runs the
+ * login itself with the chosen adoption -- instead of logging in directly.
+ * Dev mode keeps the offline placeholder (the app is local-first, always usable
+ * against the anonymous replica).
  */
-import { useEffect } from 'react'
-import { Link as RouterLink, useNavigate } from 'react-router'
+import { useState } from 'react'
+import { Link as RouterLink, Navigate } from 'react-router'
 import { Alert, Box, Button, CircularProgress, Typography } from '@mui/material'
-import { useAuthStore, useLogin, type LoginPhase } from '@interop/was-react'
+import { useHasLocalData, useLogin } from '@interop/was-react'
+import { AdoptDialog } from '@interop/was-react/mui'
 import { AUTH_MODE } from '@/app.config'
 
-const PHASE_LABEL: Record<LoginPhase, string> = {
-  probing: 'Checking your wallet for the app key...',
-  'storing-key': 'Saving your app key to your wallet...',
-  'requesting-grants': 'Requesting storage access...',
+/**
+ * Human-readable copy per `useLogin` phase; an unknown phase falls back to the
+ * raw phase key in the render below.
+ */
+const PHASE_LABELS: Record<string, string> = {
+  connecting: 'Contacting your wallet...',
   verifying: 'Verifying the wallet response...'
 }
 
@@ -35,22 +42,35 @@ function DevLoginPage() {
 }
 
 function WalletLoginPage() {
-  const navigate = useNavigate()
-  const authStore = useAuthStore()
-  const { login, status, phase, error } = useLogin()
+  const { login, authenticating, status, phase, error } = useLogin()
+  const hasLocalData = useHasLocalData()
+  const [adoptOpen, setAdoptOpen] = useState(false)
+  const busy = authenticating
 
-  // Try the zero-popup restore first, and leave once authenticated.
-  useEffect(() => {
-    void authStore.getState().restore()
-  }, [authStore])
-  useEffect(() => {
-    if (status === 'authenticated') {
-      navigate('/', { replace: true })
+  if (status === 'connected') {
+    return <Navigate to="/" replace />
+  }
+
+  /**
+   * On click, branch on whether the anonymous replica holds data: if it does,
+   * let the user choose what happens to it via the dialog (which runs the
+   * login); otherwise log in directly. `login` resolves `{ firstRun }` on a
+   * connected outcome (the `Navigate` above then sends them to the app), `null`
+   * on a cancelled wallet popup, and rejects on a genuine failure -- whose
+   * message the library mirrors into `error`, rendered as the alert below, so
+   * the catch just keeps the rejection handled.
+   */
+  async function handleLogin(): Promise<void> {
+    if (await hasLocalData()) {
+      setAdoptOpen(true)
+      return
     }
-  }, [status, navigate])
-
-  const busy =
-    status === 'idle' || status === 'restoring' || status === 'authenticating'
+    try {
+      await login()
+    } catch {
+      // Surfaced via the `error` alert.
+    }
+  }
 
   return (
     <Box data-testid="login-page" sx={{ textAlign: 'center', mt: 6 }}>
@@ -70,7 +90,7 @@ function WalletLoginPage() {
           {error}
         </Alert>
       )}
-      {status === 'authenticating' ? (
+      {busy ? (
         <Box
           sx={{
             display: 'flex',
@@ -81,7 +101,9 @@ function WalletLoginPage() {
         >
           <CircularProgress />
           <Typography color="text.secondary" data-testid="login-phase">
-            {phase ? PHASE_LABEL[phase] : 'Contacting your wallet...'}
+            {phase
+              ? (PHASE_LABELS[phase] ?? phase)
+              : 'Contacting your wallet...'}
           </Typography>
         </Box>
       ) : (
@@ -89,12 +111,13 @@ function WalletLoginPage() {
           variant="contained"
           size="large"
           disabled={busy}
-          onClick={() => void login()}
+          onClick={() => void handleLogin()}
           data-testid="login-with-wallet"
         >
           Login with wallet
         </Button>
       )}
+      <AdoptDialog open={adoptOpen} onClose={() => setAdoptOpen(false)} />
     </Box>
   )
 }

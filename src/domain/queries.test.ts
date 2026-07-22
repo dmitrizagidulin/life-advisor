@@ -13,12 +13,12 @@ import {
 import { createActionItem, createGoal, createProject } from './factories'
 
 const D = 'dev'
-const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'deviceId'>) =>
-  createActionItem({ ...o, deviceId: D })
-const proj = (o: Omit<Parameters<typeof createProject>[0], 'deviceId'>) =>
-  createProject({ ...o, deviceId: D })
-const goal = (o: Omit<Parameters<typeof createGoal>[0], 'deviceId'>) =>
-  createGoal({ ...o, deviceId: D })
+const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'clientId'>) =>
+  createActionItem({ ...o, clientId: D })
+const proj = (o: Omit<Parameters<typeof createProject>[0], 'clientId'>) =>
+  createProject({ ...o, clientId: D })
+const goal = (o: Omit<Parameters<typeof createGoal>[0], 'clientId'>) =>
+  createGoal({ ...o, clientId: D })
 
 describe('allTodo', () => {
   const items = [

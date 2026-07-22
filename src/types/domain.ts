@@ -7,7 +7,7 @@
  * Enum orders are load-bearing (they drive Rails-ported sort comparators); do
  * not reorder. All timestamps are ISO-8601 strings. `id` is a `uuidv7()` logical
  * entity id -- distinct from the opaque random EDV resource id that keys the
- * at-rest row. `deviceId` (random per install) is the last-write-wins tiebreak.
+ * at-rest row. `clientId` (random per install) is the last-write-wins tiebreak.
  */
 export const MYWN_CATEGORIES = [
   'critical',
@@ -51,7 +51,7 @@ export interface ActionItemDoc {
   parentKey?: string
   createdAt: string
   updatedAt: string
-  deviceId: string // LWW tiebreak, random per install
+  clientId: string // LWW tiebreak, random per install
 }
 
 export interface ProjectDoc {
@@ -69,7 +69,7 @@ export interface ProjectDoc {
   parentKey?: string
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface GoalDoc {
@@ -83,7 +83,7 @@ export interface GoalDoc {
   parentKey?: string
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface QuestionDoc {
@@ -97,7 +97,7 @@ export interface QuestionDoc {
   parentKey?: string
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface AnswerDoc {
@@ -108,7 +108,7 @@ export interface AnswerDoc {
   parentKey: string
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface WebLinkDoc {
@@ -120,7 +120,7 @@ export interface WebLinkDoc {
   parentKey: string // default: day / today
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface ThoughtDoc {
@@ -130,7 +130,7 @@ export interface ThoughtDoc {
   parentKey: string // default: day / today
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
 
 export interface CurrentFocusDoc {
@@ -139,5 +139,5 @@ export interface CurrentFocusDoc {
   focusKey: string // entity uuid, or 'YYYY-MM-DD'
   createdAt: string
   updatedAt: string
-  deviceId: string
+  clientId: string
 }
