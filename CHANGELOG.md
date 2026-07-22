@@ -16,17 +16,18 @@ storage space.
   ever sees ciphertext. Records use a stable resource id with in-place
   re-encryption (advancing an envelope sequence) for updates and tombstones for
   deletes. Concurrent edits from multiple devices converge by last-write-wins on
-  the payload timestamp, with a per-install device id as the tiebreak.
+  the payload timestamp, with a per-install client id as the tiebreak.
 - Per-collection encryption keys derived from a single 32-byte master seed: a
   stable did:key controller identity plus one X25519 key-agreement key per
   collection via HKDF, so a single collection's key can later be shared with
   another interoperable app without exposing the master or sibling collections.
-- Login With Wallet (CHAPI). The app authenticates against the wallet, self-issues
-  and stores its app-key credential (holding the master seed) for cross-device
-  recovery, and requests wallet-delegated capabilities scoped to each storage
-  collection. First login, returning login on a new device, and zero-popup hot
-  restore of a persisted session are all supported, along with an offline
-  development mode that runs without a wallet.
+- Login With Wallet (CHAPI). A single "App Connect" popup authenticates the
+  user and returns the app-key credential (minted wallet-side on first run,
+  holding the master seed for cross-device recovery) together with
+  wallet-delegated capabilities scoped to each storage collection. First
+  login, returning login on a new device, and zero-popup hot restore of a
+  persisted session are all supported, along with an offline development mode
+  that runs without a wallet.
 - WAS replication. The local database replicates encrypted envelopes to the
   user's storage space over the delegated capabilities, pulling remote changes
   through the changes feed and pushing with conditional writes. Incoming changes
@@ -49,13 +50,20 @@ storage space.
 ### Changed
 
 - Replaced the app's own identity, auth, storage, sync, and session plumbing
-  with `@interop/was-react` (the library extracted from this app). The app now
-  supplies a single `WasAppConfig` (pinning the pre-library credential type,
-  database names, and deviceId key so existing identities and stored data carry
-  over unchanged) and a collection-to-store registry, wraps the route tree in
-  `WasSessionProvider`, and consumes the library's hooks and MUI components
-  (`ReconnectBanner`, `SyncStatusChip`). The dev-mode bootstrap, dev-sync
-  harness, and grant-provisioning script now drive the library's primitives.
-  This also picks up the library's conflict-handling fixes (metadata-only
-  conflict comparison, changes-feed scan-budget handling) and session
-  teardown/race fixes.
+  with `@interop/was-react` (the library extracted from this app). The app
+  supplies a single `WasAppConfig` and a collection-to-store registry, wraps
+  the app in `WasSessionProvider`, and consumes the library's hooks and MUI
+  components (`ProtectedRoute`, `SyncStatusChip`, `ReconnectBanner`, and the
+  logout, clear-data, and adoption dialogs).
+- Local-first onboarding. In development mode the app opens directly over an
+  anonymous local encrypted replica with no login gate; a later wallet login
+  adopts that data into the connected replica (last-write-wins merge by
+  logical id). Logout became an in-shell dialog offering to keep or wipe the
+  local replica.
+- One-popup login. The multi-step probe / store-key / request-grants CHAPI
+  ceremony collapsed into a single App Connect exchange; the sync target now
+  comes from the granted capabilities instead of a configured server URL, and
+  the last-write-wins tiebreak field is `clientId`.
+- The development harness connects through locally provisioned grants and the
+  library's `connectWithGrants`; the end-to-end suites boot the WAS server
+  from the `was-teaching-server` npm package instead of a sibling checkout.

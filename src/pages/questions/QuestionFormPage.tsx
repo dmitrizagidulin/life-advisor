@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createQuestion } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useQuestions } from '@/stores/entities/questions'
 import {
   EntityFormShell,
@@ -39,7 +39,7 @@ export function QuestionFormPage({ mode }: { mode: 'new' | 'edit' }) {
         createQuestion({
           name: name.trim(),
           description: description.trim() || undefined,
-          deviceId: getDeviceId()
+          clientId: getClientId()
         }),
       buildEdit: () => ({
         ...existing!,

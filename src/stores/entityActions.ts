@@ -5,7 +5,7 @@
  * through the individual stores. Kept out of the stores themselves (which stay
  * single-collection) and out of the pure domain layer (which never persists).
  */
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { toActionItem, fromActionItem } from '@/domain/webLinks'
 import { forParent } from '@/domain/parent'
 import { useActionItems } from '@/stores/entities/actionItems'
@@ -21,7 +21,7 @@ export function linksForItem(item: ActionItemDoc): WebLinkDoc[] {
 /** Convert a standalone web link into an action item plus a child link. */
 export async function convertLinkToActionItem(link: WebLinkDoc): Promise<void> {
   const { item, link: childLink, deleteWebLinkId } = toActionItem(link, {
-    deviceId: getDeviceId()
+    clientId: getClientId()
   })
   await useActionItems.getState().insert(item)
   await useWebLinks.getState().insert(childLink)
@@ -36,7 +36,7 @@ export async function convertActionItemToLink(
   const { link, deleteActionItemId, deleteWebLinkIds } = fromActionItem(
     item,
     links,
-    { deviceId: getDeviceId() }
+    { clientId: getClientId() }
   )
   await useWebLinks.getState().insert(link)
   await useActionItems.getState().remove(deleteActionItemId)

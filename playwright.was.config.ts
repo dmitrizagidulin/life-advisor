@@ -39,6 +39,7 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 60_000,
     env: {
+      VITE_AUTH_MODE: 'dev',
       VITE_WAS_DEV_SYNC: 'true',
       // Snappier backoff + change-feed polling so multi-device convergence and
       // offline/online recovery land within the test timeouts.

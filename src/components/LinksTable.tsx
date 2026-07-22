@@ -23,7 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { createWebLink } from '@/domain/factories'
 import { nameDisplay } from '@/domain/webLinks'
 import { forParent } from '@/domain/parent'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { convertLinkToActionItem } from '@/stores/entityActions'
 import type { ParentType } from '@/types/domain'
@@ -53,7 +53,7 @@ export function LinksTable({
         name: name.trim() || undefined,
         parentType,
         parentKey,
-        deviceId: getDeviceId()
+        clientId: getClientId()
       })
     )
     setUrl('')

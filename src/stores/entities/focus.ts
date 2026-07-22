@@ -7,7 +7,7 @@
  * update), so the app never mints a second envelope for the singleton.
  */
 import { create } from 'zustand'
-import { requireStore, getDeviceId } from '@/stores/storageManager'
+import { requireStore, getClientId } from '@interop/was-react'
 import { focusOn, resetFocus } from '@/domain/focus'
 import type { CurrentFocusDoc } from '@/types/domain'
 
@@ -25,7 +25,7 @@ interface FocusStore {
   reset: () => Promise<void>
 }
 
-export const useFocus = create<FocusStore>((set) => ({
+export const useFocus = create<FocusStore>(set => ({
   doc: null,
   hydrate: async () => {
     const doc =
@@ -33,12 +33,12 @@ export const useFocus = create<FocusStore>((set) => ({
     set({ doc })
   },
   setFocus: async (focusType, focusKey) => {
-    const doc = focusOn(focusType, focusKey, getDeviceId())
+    const doc = focusOn(focusType, focusKey, getClientId())
     await requireStore().upsertEntity(COLLECTION, doc)
     set({ doc })
   },
   reset: async () => {
-    const doc = resetFocus(getDeviceId())
+    const doc = resetFocus(getClientId())
     await requireStore().upsertEntity(COLLECTION, doc)
     set({ doc })
   }

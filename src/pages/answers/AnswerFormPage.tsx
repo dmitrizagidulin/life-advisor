@@ -8,7 +8,7 @@ import { useSearchParams } from 'react-router'
 import { TextField } from '@mui/material'
 import { createAnswer } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useAnswers } from '@/stores/entities/answers'
 import {
   EntityFormShell,
@@ -47,7 +47,7 @@ export function AnswerFormPage({ mode }: { mode: 'new' | 'edit' }) {
         createAnswer({
           name: name.trim(),
           parentKey: questionId,
-          deviceId: getDeviceId()
+          clientId: getClientId()
         }),
       buildEdit: () => ({ ...existing!, name: name.trim(), updatedAt: nowIso() })
     })

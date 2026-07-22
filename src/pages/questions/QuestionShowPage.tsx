@@ -16,7 +16,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import { createAnswer } from '@/domain/factories'
 import { forParent } from '@/domain/parent'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useQuestions } from '@/stores/entities/questions'
 import { useAnswers } from '@/stores/entities/answers'
 import { LinksTable } from '@/components/LinksTable'
@@ -45,7 +45,7 @@ export function QuestionShowPage() {
       createAnswer({
         name: answerText.trim(),
         parentKey: question!.id,
-        deviceId: getDeviceId()
+        clientId: getClientId()
       })
     )
     setAnswerText('')

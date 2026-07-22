@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { Checkbox, FormControlLabel, TextField } from '@mui/material'
 import { createGoal } from '@/domain/factories'
 import { nowIso } from '@/lib/dates'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useGoals } from '@/stores/entities/goals'
 import {
   EntityFormShell,
@@ -46,7 +46,7 @@ export function GoalFormPage({ mode }: { mode: 'new' | 'edit' }) {
           description: description.trim() || undefined,
           active,
           accomplished,
-          deviceId: getDeviceId()
+          clientId: getClientId()
         }),
       buildEdit: () => ({
         ...existing!,

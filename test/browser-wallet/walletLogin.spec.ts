@@ -2,22 +2,22 @@
  * Login-With-Wallet e2e against a real local freewallet + was-teaching-server.
  *
  * CHAPI has no mediator here; two injection seams stand in for it:
- * - App side: `window.__WAS_REACT_E2E_CHAPI__` switches the library's CHAPI layer to a
- *   request queue (`__WAS_REACT_E2E_CHAPI_REQUESTS__` / `__WAS_REACT_E2E_CHAPI_RESPONSES__`) this
- *   spec services.
- * - Wallet side: freewallet's own non-production `__E2E_CHAPI_GET_EVENT__`
- *   seam drives its /#/wallet/get popup with the app's captured VPR; the
- *   response VP is read back off `__E2E_CHAPI_RESPONSE__`.
- * The CHAPI store() step has NO wallet-side seam (WalletStorePage reads the
- * real channel only), so the spec lands the credential through the wallet's
- * Add Credential paste flow -- the same wallet-vault write path -- and then
- * acks the app's store request.
+ * - App side: `window.__WAS_REACT_E2E_CHAPI__` switches the library's CHAPI
+ *   layer to a request queue (`__WAS_REACT_E2E_CHAPI_REQUESTS__` /
+ *   `__WAS_REACT_E2E_CHAPI_RESPONSES__`) this spec services.
+ * - Wallet side: freewallet's own non-production `__E2E_CHAPI_GET_EVENT__` seam
+ *   drives its /#/wallet/get popup with the app's captured VPR; the response VP
+ *   is read back off `__E2E_CHAPI_RESPONSE__`.
+ * Login is the one-popup App Connect flow: the app sends a single get()
+ * carrying the AppConnectQuery, and the wallet's consent screen approves the
+ * whole thing (match-or-mint the app key, delegate the grants) in one round.
  *
  * One serialized test walks the whole life cycle on a single wallet account
- * (signup is slow -- deliberately expensive PBKDF2): first login (store key +
- * grants + provisioning), replication, logout/login (returning path),
- * cleared-app-storage recovery (seed via QueryByExample, data from WAS), and
- * the expired-session fallthrough.
+ * (signup is slow -- deliberately expensive PBKDF2): first login (mints the app
+ * key + grants + provisioning), a data write that replicates to WAS, a
+ * logout/login (returning path recovering from WAS), a cleared-app-storage
+ * recovery (seed via the wallet, data from WAS), and the expired-session
+ * fallthrough.
  */
 import {
   test,
@@ -69,16 +69,12 @@ async function signupWallet(page: Page, testInfo: TestInfo) {
 }
 
 /**
- * Services one app-captured `get()` VPR through the wallet's /#/wallet/get
- * page (freewallet's injection seam), returning the CHAPI wire response.
+ * Services one app-captured `get()` VPR through the wallet's /#/wallet/get page
+ * (freewallet's injection seam), returning the CHAPI wire response.
  */
 async function driveWalletGet(
   context: BrowserContext,
-  {
-    vpr,
-    passphrase,
-    selectCredential = false
-  }: { vpr: unknown; passphrase: string; selectCredential?: boolean }
+  { vpr, passphrase }: { vpr: unknown; passphrase: string }
 ): Promise<unknown> {
   const page = await context.newPage()
   await page.addInitScript(
@@ -110,14 +106,8 @@ async function driveWalletGet(
   await page
     .locator('input[type="password"]')
     .waitFor({ state: 'detached', timeout: 30_000 })
-  if (selectCredential) {
-    // The LifeAdvisorKey is not a wallet Login Credential, so it is not
-    // pre-selected on the share screen.
-    const checkbox = page.getByRole('checkbox').first()
-    await checkbox.waitFor({ timeout: 15_000 })
-    await checkbox.check()
-  }
-  await page.getByRole('button', { name: 'Continue' }).click()
+  // The App Connect consent screen approves everything with one button.
+  await page.getByRole('button', { name: 'Connect' }).click()
   await expect
     .poll(
       () =>
@@ -139,22 +129,6 @@ async function driveWalletGet(
   )
   await page.close()
   return (response as { value: unknown }).value
-}
-
-/**
- * Lands a credential in the wallet vault via the dashboard Add Credential
- * paste flow (`walletPage` must be logged in on the dashboard).
- */
-async function walletAddCredential(walletPage: Page, credentialJson: string) {
-  await walletPage.getByRole('link', { name: 'Add Credential' }).click()
-  await expect(walletPage).toHaveURL(/#\/add-credential/)
-  await walletPage
-    .getByRole('textbox', { name: /Paste a URL/ })
-    .fill(credentialJson)
-  await walletPage.getByRole('button', { name: 'Add' }).click()
-  await expect(walletPage).toHaveURL(/#\/accept-credentials/)
-  await walletPage.getByRole('button', { name: 'Accept all' }).click()
-  await expect(walletPage).toHaveURL(/#\/dashboard/)
 }
 
 /* ------------------------------ app helpers ------------------------------ */
@@ -317,58 +291,21 @@ async function wipeAppDatabases(page: Page): Promise<string[]> {
 async function loginFromAppPage(
   appPage: Page,
   walletContext: BrowserContext,
-  {
-    passphrase,
-    walletPage,
-    expectFirstRun
-  }: { passphrase: string; walletPage: Page; expectFirstRun: boolean }
+  { passphrase }: { passphrase: string }
 ) {
   await expect(appPage.getByTestId('login-with-wallet')).toBeEnabled({
     timeout: 15_000
   })
   await appPage.getByTestId('login-with-wallet').click()
 
-  // Popup #1: the seed probe.
-  const probe = await popChapiRequest(appPage)
-  expect(probe.type).toBe('get')
-  const probeResponse = await driveWalletGet(walletContext, {
-    vpr: probe.body,
-    passphrase,
-    selectCredential: !expectFirstRun
-  })
-  await respondChapi(appPage, probe.id, probeResponse)
-
-  if (expectFirstRun) {
-    // First run: the app stores its key credential in the wallet.
-    const store = await popChapiRequest(appPage)
-    expect(store.type).toBe('store')
-    const offered = store.body as {
-      verifiableCredential: Array<Record<string, unknown>>
-    }
-    const credential = offered.verifiableCredential[0]!
-    expect(credential.type).toContain('LifeAdvisorKey')
-    await walletAddCredential(walletPage, JSON.stringify(credential))
-    await respondChapi(appPage, store.id, {
-      dataType: 'VerifiablePresentation',
-      data: store.body
-    })
-  }
-
-  // Popup #2: the storage grants.
-  const grants = await popChapiRequest(appPage)
-  expect(grants.type).toBe('get')
-  const grantsVpr = grants.body as {
-    query: Array<{ type: string; capabilityQuery?: unknown[] }>
-  }
-  const zcapQuery = grantsVpr.query.find(
-    q => q.type === 'AuthorizationCapabilityQuery'
-  )
-  expect(zcapQuery?.capabilityQuery).toHaveLength(COLLECTION_IDS.length + 1)
-  const grantsResponse = await driveWalletGet(walletContext, {
-    vpr: grants.body,
+  // The single App Connect popup: mint-or-match the app key + grants.
+  const connect = await popChapiRequest(appPage)
+  expect(connect.type).toBe('get')
+  const connectResponse = await driveWalletGet(walletContext, {
+    vpr: connect.body,
     passphrase
   })
-  await respondChapi(appPage, grants.id, grantsResponse)
+  await respondChapi(appPage, connect.id, connectResponse)
 
   // Login completes and the router lands on the dashboard.
   await expect(appPage.getByTestId('dashboard-page')).toBeVisible({
@@ -404,24 +341,22 @@ test('login with wallet: first login, replication, logout/login, cleared-storage
   const walletPage = await context.newPage()
   const { passphrase } = await signupWallet(walletPage, testInfo)
 
-  /* Phase 1: first login -- store the app key, approve grants, enter. */
+  /* Phase 1: first login -- one App Connect popup mints the app key and
+     approves the grants. */
   const appPage = await context.newPage()
   await armChapiBridge(appPage)
   await appPage.goto(`${APP_URL}/#/login`)
   await expect(appPage.getByTestId('login-page')).toBeVisible()
-  await loginFromAppPage(appPage, context, {
-    passphrase,
-    walletPage,
-    expectFirstRun: true
-  })
+  await loginFromAppPage(appPage, context, { passphrase })
 
-  // The persisted session mirrors the plan's grant contract: 9 grants (8
-  // collections + space read), all controlled by the app DID, all rooted in
-  // ONE space on the local WAS server, all expiring in the future.
+  // The persisted session mirrors the grant contract: one grant per
+  // collection (no whole-space read grant -- dropped for privacy), all
+  // controlled by the app DID, all rooted in ONE space on the local WAS
+  // server, all expiring in the future.
   const record = await readSessionRecord(appPage)
   expect(record).not.toBeNull()
   expect(record!.serverUrl).toBe(WAS_URL)
-  expect(record!.grants).toHaveLength(COLLECTION_IDS.length + 1)
+  expect(record!.grants).toHaveLength(COLLECTION_IDS.length)
   expect(record!.controllerDid).toMatch(/^did:key:z6Mk/)
   const spacePrefix = `${WAS_URL}/space/${record!.spaceId}`
   for (const grant of record!.grants) {
@@ -457,20 +392,18 @@ test('login with wallet: first login, replication, logout/login, cleared-storage
   })
   await expect(itemRow(appPage, itemName)).toBeVisible()
 
-  /* Phase 4: logout wipes the session; login again = returning path (the
-     wallet returns the stored LifeAdvisorKey; no store() this time). */
+  /* Phase 4: log out erasing the local replica (LogoutDialog's wipe option),
+     so the returning login must recover the item from WAS rather than from
+     local storage. Logout leaves the connected state; the login-gated router
+     redirects to /login. The returning login matches the stored app key
+     instead of minting a new one. */
   await appPage.getByTestId('nav-logout').click()
-  await expect(appPage.getByTestId('back-to-login')).toBeVisible({
+  await appPage.getByTestId('logout-wipe').click()
+  await expect(appPage.getByTestId('login-page')).toBeVisible({
     timeout: 15_000
   })
   expect(await readSessionRecord(appPage)).toBeNull()
-  await appPage.getByTestId('back-to-login').click()
-  await expect(appPage.getByTestId('login-page')).toBeVisible()
-  await loginFromAppPage(appPage, context, {
-    passphrase,
-    walletPage,
-    expectFirstRun: false
-  })
+  await loginFromAppPage(appPage, context, { passphrase })
   await expect(itemRow(appPage, itemName)).toBeVisible({ timeout: 30_000 })
 
   /* Phase 5: cleared-storage recovery. Wipe EVERY app-origin database (seed,
@@ -497,11 +430,7 @@ test('login with wallet: first login, replication, logout/login, cleared-storage
   await expect(appPage.getByTestId('login-page')).toBeVisible({
     timeout: 30_000
   })
-  await loginFromAppPage(appPage, context, {
-    passphrase,
-    walletPage,
-    expectFirstRun: false
-  })
+  await loginFromAppPage(appPage, context, { passphrase })
   // The item is back -- decrypted from envelopes pulled from WAS with the
   // wallet-recovered seed.
   await expect(itemRow(appPage, itemName)).toBeVisible({ timeout: 45_000 })

@@ -13,10 +13,10 @@ import { createActionItem, createProject } from './factories'
 
 const D = 'dev'
 const NOW = '2026-07-06T12:00:00.000Z'
-const proj = (o: Omit<Parameters<typeof createProject>[0], 'deviceId'>) =>
-  createProject({ ...o, deviceId: D })
-const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'deviceId'>) =>
-  createActionItem({ ...o, deviceId: D })
+const proj = (o: Omit<Parameters<typeof createProject>[0], 'clientId'>) =>
+  createProject({ ...o, clientId: D })
+const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'clientId'>) =>
+  createActionItem({ ...o, clientId: D })
 
 describe('changeStatus', () => {
   it('completed sets completedAt, clears canceledAt', () => {

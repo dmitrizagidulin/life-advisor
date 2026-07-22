@@ -24,7 +24,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import { createWebLink } from '@/domain/factories'
 import { nameDisplay } from '@/domain/webLinks'
 import { compareChildren } from '@/domain/sort'
-import { getDeviceId } from '@/stores/storageManager'
+import { getClientId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { convertLinkToActionItem } from '@/stores/entityActions'
 
@@ -43,7 +43,7 @@ export function WebLinksIndexPage() {
       createWebLink({
         url: url.trim(),
         name: name.trim() || undefined,
-        deviceId: getDeviceId()
+        clientId: getClientId()
       })
     )
     setUrl('')

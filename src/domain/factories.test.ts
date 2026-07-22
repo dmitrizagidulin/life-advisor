@@ -19,7 +19,7 @@ const TODAY = '2026-07-06'
 
 describe('createActionItem defaults', () => {
   it('applies the ported defaults', () => {
-    const item = createActionItem({ name: 'x', deviceId: D }, NOW, 'id-1')
+    const item = createActionItem({ name: 'x', clientId: D }, NOW, 'id-1')
     expect(item).toMatchObject({
       id: 'id-1',
       name: 'x',
@@ -31,18 +31,18 @@ describe('createActionItem defaults', () => {
       bumpCount: 0,
       createdAt: NOW,
       updatedAt: NOW,
-      deviceId: D
+      clientId: D
     })
   })
 
   it('lets a provided false done through', () => {
-    expect(createActionItem({ name: 'x', deviceId: D, done: false }).done).toBe(false)
+    expect(createActionItem({ name: 'x', clientId: D, done: false }).done).toBe(false)
   })
 })
 
 describe('createProject defaults', () => {
   it('idea status, null timestamps, empty goalIds, admin area', () => {
-    const p = createProject({ name: 'p', deviceId: D }, NOW)
+    const p = createProject({ name: 'p', clientId: D }, NOW)
     expect(p).toMatchObject({
       status: 'idea',
       completedAt: null,
@@ -54,21 +54,21 @@ describe('createProject defaults', () => {
   })
 
   it('created with completed status stamps completedAt and clears canceledAt', () => {
-    const p = createProject({ name: 'p', status: 'completed', deviceId: D }, NOW)
+    const p = createProject({ name: 'p', status: 'completed', clientId: D }, NOW)
     expect(p.status).toBe('completed')
     expect(p.completedAt).toBe(NOW)
     expect(p.canceledAt).toBe(null)
   })
 
   it('created with canceled status stamps canceledAt and clears completedAt', () => {
-    const p = createProject({ name: 'p', status: 'canceled', deviceId: D }, NOW)
+    const p = createProject({ name: 'p', status: 'canceled', clientId: D }, NOW)
     expect(p.status).toBe('canceled')
     expect(p.canceledAt).toBe(NOW)
     expect(p.completedAt).toBe(null)
   })
 
   it('created with active status leaves both timestamps null', () => {
-    const p = createProject({ name: 'p', status: 'active', deviceId: D }, NOW)
+    const p = createProject({ name: 'p', status: 'active', clientId: D }, NOW)
     expect(p.status).toBe('active')
     expect(p.completedAt).toBe(null)
     expect(p.canceledAt).toBe(null)
@@ -77,7 +77,7 @@ describe('createProject defaults', () => {
 
 describe('createGoal defaults', () => {
   it('active true, accomplished false', () => {
-    const g = createGoal({ name: 'g', deviceId: D })
+    const g = createGoal({ name: 'g', clientId: D })
     expect(g.active).toBe(true)
     expect(g.accomplished).toBe(false)
     expect(g.bumpCount).toBe(0)
@@ -86,7 +86,7 @@ describe('createGoal defaults', () => {
 
 describe('createQuestion defaults', () => {
   it('answered false, answeredAt null', () => {
-    const q = createQuestion({ name: 'q', deviceId: D })
+    const q = createQuestion({ name: 'q', clientId: D })
     expect(q.answered).toBe(false)
     expect(q.answeredAt).toBe(null)
   })
@@ -94,7 +94,7 @@ describe('createQuestion defaults', () => {
 
 describe('createAnswer', () => {
   it('is always question-parented', () => {
-    const a = createAnswer({ deviceId: D, parentKey: 'q1' })
+    const a = createAnswer({ clientId: D, parentKey: 'q1' })
     expect(a.parentType).toBe('question')
     expect(a.parentKey).toBe('q1')
   })
@@ -102,14 +102,14 @@ describe('createAnswer', () => {
 
 describe('createWebLink / createThought day default', () => {
   it('web link with no parent defaults to today', () => {
-    const l = createWebLink({ url: 'https://x.com', deviceId: D }, NOW, 'id', TODAY)
+    const l = createWebLink({ url: 'https://x.com', clientId: D }, NOW, 'id', TODAY)
     expect(l.parentType).toBe('day')
     expect(l.parentKey).toBe(TODAY)
   })
 
   it("web link with 'today' sentinel maps to today's date", () => {
     const l = createWebLink(
-      { url: 'https://x.com', deviceId: D, parentType: 'day', parentKey: 'today' },
+      { url: 'https://x.com', clientId: D, parentType: 'day', parentKey: 'today' },
       NOW,
       'id',
       TODAY
@@ -119,7 +119,7 @@ describe('createWebLink / createThought day default', () => {
 
   it('web link keeps an explicit real parent', () => {
     const l = createWebLink(
-      { url: 'https://x.com', deviceId: D, parentType: 'project', parentKey: 'p1' },
+      { url: 'https://x.com', clientId: D, parentType: 'project', parentKey: 'p1' },
       NOW,
       'id',
       TODAY
@@ -129,7 +129,7 @@ describe('createWebLink / createThought day default', () => {
   })
 
   it('thought defaults to today', () => {
-    const t = createThought({ name: 'idea', deviceId: D }, NOW, 'id', TODAY)
+    const t = createThought({ name: 'idea', clientId: D }, NOW, 'id', TODAY)
     expect(t.parentType).toBe('day')
     expect(t.parentKey).toBe(TODAY)
   })
@@ -137,7 +137,7 @@ describe('createWebLink / createThought day default', () => {
 
 describe('createCurrentFocus', () => {
   it('has the fixed singleton id', () => {
-    const f = createCurrentFocus({ focusType: 'day', focusKey: 'today', deviceId: D })
+    const f = createCurrentFocus({ focusType: 'day', focusKey: 'today', clientId: D })
     expect(f.id).toBe('_current_focus')
   })
 })
