@@ -13,16 +13,13 @@
     "lint": "eslint src test",
     "test": "pnpm run lint && pnpm run test:node",
     "test:browser": "playwright test",
-    "test:browser:was": "playwright test -c playwright.was.config.ts",
-    "test:browser:wallet": "playwright test -c playwright.wallet.config.ts",
     "test:node": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "provision:dev": "tsx scripts/provision-dev-grants.ts"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@interop/was-react": "^0.3.4",
+    "@interop/was-react": "^0.3.5",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
     "react": "^19.2.4",

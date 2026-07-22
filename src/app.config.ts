@@ -7,32 +7,14 @@
 import type { WasAppConfig } from '@interop/was-react'
 
 // Vite injects `import.meta.env` in the browser build; a plain Node context
-// (the dev provisioning script, or a bare `tsx` import) has no such object, so
-// fall back to an empty record rather than throwing on property access.
+// (a bare `tsx` import) has no such object, so fall back to an empty record
+// rather than throwing on property access.
 const env: Record<string, string | undefined> =
   (import.meta.env as Record<string, string | undefined> | undefined) ?? {}
 
 // This app's own origin, used later for CHAPI wallet registration and the
 // anti-phishing origin binding on the app-key credential.
 export const APP_ORIGIN = env.VITE_APP_ORIGIN || 'http://localhost:5173'
-
-// Auth mode: 'dev' (default) boots straight into the local anonymous replica
-// with no login gate (local-first, optionally dev-syncing under WAS_DEV_SYNC);
-// 'wallet' gates the app behind Login With Wallet (CHAPI). It maps onto the
-// library's `onboarding` mode below.
-export const AUTH_MODE: 'dev' | 'wallet' =
-  env.VITE_AUTH_MODE === 'wallet' ? 'wallet' : 'dev'
-
-// Dev-sync mode (CHAPI bypassed): when truthy, the app loads a locally
-// provisioned grants file and replicates to a running was-teaching-server using
-// the dev seed's delegated zcaps. Off by default (offline-only).
-export const WAS_DEV_SYNC =
-  env.VITE_WAS_DEV_SYNC === 'true' || env.VITE_WAS_DEV_SYNC === '1'
-
-// URL the app fetches the dev grants JSON from (a git-ignored file written into
-// `public/` by scripts/provision-dev-grants.ts; Vite serves `public/` at root).
-export const WAS_DEV_GRANTS_URL =
-  env.VITE_WAS_DEV_GRANTS_URL || '/dev-grants.local.json'
 
 // Replication tuning (optional). Undefined leaves the adapter defaults.
 export const WAS_SYNC_BATCH_SIZE: number | undefined =
@@ -75,8 +57,8 @@ export type CollectionKey = (typeof LA_COLLECTIONS)[number]['key']
 export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
 
 /**
- * The one `WasAppConfig` handed to `@interop/was-react` (the session provider,
- * the auth store, and the dev harness all read from here).
+ * The one `WasAppConfig` handed to `@interop/was-react` (the session provider
+ * and the auth store both read from here).
  *
  * PINNED values -- part of this app's stored-data contract, never change them:
  * `credential` names the seed VC type the wallet holds, and `dbName` names the
@@ -85,10 +67,9 @@ export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
 export const WAS_APP_CONFIG: WasAppConfig = {
   appName: 'Life Advisor',
   appOrigin: APP_ORIGIN,
-  // Wallet mode gates the app behind login; dev mode is local-first (a usable
-  // anonymous replica with no login gate). Only affects the router's rendering,
-  // never the store's transitions.
-  onboarding: AUTH_MODE === 'wallet' ? 'login-gated' : 'local-first',
+  // The app is gated behind Login With Wallet. Only affects the router's
+  // rendering, never the store's transitions.
+  onboarding: 'login-gated',
   collections: [...LA_COLLECTIONS],
   credential: {
     credentialType: 'LifeAdvisorKey',

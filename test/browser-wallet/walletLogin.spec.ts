@@ -26,7 +26,7 @@ import {
   type Page,
   type TestInfo
 } from '@playwright/test'
-import { APP_URL, WALLET_URL, WAS_URL } from '../../playwright.wallet.config'
+import { APP_URL, WALLET_URL, WAS_URL } from '../../playwright.config'
 
 const COLLECTION_IDS = [
   'action-items',

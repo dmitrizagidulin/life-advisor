@@ -26,8 +26,7 @@ storage space.
   holding the master seed for cross-device recovery) together with
   wallet-delegated capabilities scoped to each storage collection. First
   login, returning login on a new device, and zero-popup hot restore of a
-  persisted session are all supported, along with an offline development mode
-  that runs without a wallet.
+  persisted session are all supported.
 - WAS replication. The local database replicates encrypted envelopes to the
   user's storage space over the delegated capabilities, pulling remote changes
   through the changes feed and pushing with conditional writes. Incoming changes

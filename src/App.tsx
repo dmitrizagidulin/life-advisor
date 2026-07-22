@@ -1,16 +1,12 @@
 /**
  * App root: theme + CssBaseline, the HashRouter, and the lazy-loaded route
- * table. The login page sits outside the gate; everything else renders behind
- * the library's `ProtectedRoute` (from `@interop/was-react/mui`) -- a thin
- * onboarding switch that renders the app in local-first mode and gates on a
- * connected wallet in login-gated mode -- inside the `AppShell` layout.
- *
- * When dev-connect is on (`WAS_DEV_SYNC`), `DevConnect` drives the store's
- * non-CHAPI `connectWithGrants` path once the anonymous local replica is open,
- * so the app reaches the same `connected` sync path a wallet login drives --
- * adopting (merging) any data already in the local replica as it connects.
+ * table. Everything renders inside the `AppShell` layout (so even the login
+ * page carries the app's identity and navigation); the login page sits outside
+ * the gate, while every other route renders behind the library's
+ * `ProtectedRoute` (from `@interop/was-react/mui`), which redirects a
+ * not-connected visitor to `/login`.
  */
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import { HashRouter, Route, Routes } from 'react-router'
 import {
   Box,
@@ -18,12 +14,9 @@ import {
   CssBaseline,
   ThemeProvider
 } from '@mui/material'
-import { useAuthStore, useSession } from '@interop/was-react'
 import { ProtectedRoute } from '@interop/was-react/mui'
-import { WAS_DEV_SYNC } from '@/app.config'
 import { theme } from '@/themes/theme'
 import { AppShell } from '@/components/AppShell'
-import { runDevConnect } from '@/dev/devConnect'
 
 const DashboardPage = lazy(() =>
   import('@/pages/DashboardPage').then(m => ({ default: m.DashboardPage }))
@@ -152,43 +145,16 @@ function Loading() {
   )
 }
 
-/**
- * Dev-only: once boot has landed the anonymous `local` replica, connect under
- * the provisioned dev grants. A no-op render; fires once via `runDevConnect`'s
- * own guard.
- */
-function DevConnect() {
-  const store = useAuthStore()
-  const { status } = useSession()
-
-  useEffect(() => {
-    if (status !== 'local') {
-      return
-    }
-    // Deferred + cancelable: StrictMode's mount/unmount/mount fires the
-    // provider's boot -> destroy -> boot chain, and the first boot's `local`
-    // must not launch a connect that races the second boot's re-opened
-    // replica (each open replica holds every collection open, and RxDB caps
-    // process-wide open collections). The destroy's flip back to `boot`
-    // cancels the timer; only a `local` that stays settled connects.
-    const timer = setTimeout(() => void runDevConnect(store), 250)
-    return () => clearTimeout(timer)
-  }, [store, status])
-
-  return null
-}
-
 export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {WAS_DEV_SYNC && <DevConnect />}
       <HashRouter>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<ProtectedRoute loginPath="/login" />}>
-              <Route element={<AppShell />}>
+            <Route element={<AppShell />}>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<ProtectedRoute loginPath="/login" />}>
                 <Route index element={<DashboardPage />} />
                 <Route
                   path="action-items/all"

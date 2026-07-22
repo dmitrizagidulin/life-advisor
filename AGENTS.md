@@ -39,8 +39,7 @@ structural changes.
   the session store, hooks, and the MUI components (`ProtectedRoute`, sync
   status, the logout / clear-data / adoption dialogs). The app owns
   `WAS_APP_CONFIG` (`src/app.config.ts`), the collection-to-store registry
-  (`src/stores/collectionRegistry.ts`), the per-entity stores, the dev connect
-  harness (`src/dev/`), and the UI. The `credential` type and `dbName` fields
+  (`src/stores/collectionRegistry.ts`), the per-entity stores, and the UI. The `credential` type and `dbName` fields
   of `WAS_APP_CONFIG` are data contracts -- once the app is deployed, changing
   them orphans existing users' identities and stored data.
 - **Two id planes**: logical entity id = uuidv7 INSIDE the encrypted payload;
@@ -90,7 +89,7 @@ structural changes.
 ## Conventions
 
 - pnpm; Node 24+. TypeScript strict; Vite; Vitest (`test/node/`) + Playwright (
-  `test/browser/`, plus a WAS-backed config).
+  `test/browser-wallet/`, driving the real Login With Wallet flow).
 - Domain logic in `src/domain/` must stay pure (no React, no storage imports)
   and unit-tested.
 - Do not commit or bump the package version; CHANGELOG.md entries use `TBD` as

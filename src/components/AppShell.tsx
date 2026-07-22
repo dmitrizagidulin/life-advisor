@@ -1,7 +1,9 @@
 /**
  * The application shell: a top AppBar with navigation to every section, the
  * offline sync chip, and the routed page inside a Container. The current-focus
- * banner rides above the page content on every screen.
+ * banner rides above the page content on every screen. The shell also wraps
+ * the login page (nav clicks there just bounce back through the gate), where
+ * the focus banner is suppressed.
  */
 import { useState } from 'react'
 import { Link as RouterLink, Outlet, useLocation } from 'react-router'
@@ -140,7 +142,7 @@ export function AppShell() {
       <Container maxWidth="lg" sx={{ py: 3 }}>
         <SyncErrorDiagnostics />
         <ReconnectBanner />
-        <CurrentFocusBanner />
+        {location.pathname !== '/login' && <CurrentFocusBanner />}
         <Outlet />
       </Container>
       <LogoutDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />

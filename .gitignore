@@ -82,9 +82,7 @@ test-results/
 # Vite
 .vite/
 
-# Dev-sync provisioned grants (local only, contains delegated zcaps)
-dev-grants.local.json
-public/dev-grants.local.json
+# Local-only JSON (never committed)
 *.local.json
 
 # MacOS

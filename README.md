@@ -75,18 +75,10 @@ Start the dev server (Vite, http://localhost:5173):
 pnpm dev
 ```
 
-### Auth modes
-
-The app has two auth modes (see `src/app.config.ts`):
-
-- **wallet** -- the real "Login With Wallet" CHAPI flow against a wallet.
-- **dev** -- CHAPI bypassed; the app loads pre-provisioned grants from a
-  git-ignored JSON file. Against a running local WAS server
-  (`was-teaching-server`), provision those grants with:
-
-  ```
-  SERVER_URL=http://localhost:3002 pnpm provision:dev
-  ```
+The app is gated behind "Login With Wallet" (CHAPI): it needs a reachable
+wallet (e.g. a local [freewallet](https://github.com/interop-alliance/freewallet)
+dev server) whose storage lives on a running WAS server (e.g. a local
+[`was-teaching-server`](https://github.com/interop-alliance/was-teaching-server)).
 
 ### Other scripts
 
@@ -102,15 +94,13 @@ pnpm fix          # eslint --fix + prettier
 ```
 pnpm test                  # lint + unit tests (Vitest)
 pnpm test:coverage         # unit tests with coverage
-pnpm test:browser          # Playwright, offline (no WAS server needed)
-pnpm test:browser:was      # Playwright against a local WAS server
-pnpm test:browser:wallet   # Playwright driving the full wallet login flow
+pnpm test:browser          # Playwright driving the full wallet login flow
 ```
 
 Unit tests cover the pure domain layer (`src/domain/`) and the encryption and
-conflict-resolution paths. The WAS-backed browser tests use two browser
-profiles sharing one seed to verify cross-device replication, concurrent-edit
-last-writer-wins, and offline/online recovery.
+conflict-resolution paths. The browser suite boots a local WAS server and a
+freewallet dev server (from a sibling checkout named by `FREEWALLET_DIR`) and
+drives the real Login With Wallet flow end to end.
 
 ## Contribute
 

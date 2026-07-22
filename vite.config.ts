@@ -5,24 +5,15 @@ import react from '@vitejs/plugin-react'
 
 const srcDir = fileURLToPath(new URL('./src', import.meta.url))
 
-/** The scheme://host[:port] origin of a URL, or null if unparseable/empty. */
-function originOf(url: string | undefined): string | null {
-  if (!url) {
-    return null
-  }
-  try {
-    return new URL(url).origin
-  } catch {
-    return null
-  }
-}
-
 /**
  * Injects a Content-Security-Policy meta tag into index.html. The seed and vault
  * keys live in IndexedDB, so XSS is the main threat; a tight default-src plus
- * script-src 'self' shrinks the attack surface. `connect-src` allows the app's
- * own origin plus the configured WAS server (its EDV/changes-feed requests), and
- * `frame-src` allows the CHAPI mediator (authn.io uses an iframe/popup).
+ * script-src 'self' shrinks the attack surface. `connect-src` must allow any
+ * HTTPS origin: the wallet decides at login time where its did:web DID
+ * documents and the user's storage space live (proof verification fetches the
+ * wallet's DID doc; sync targets the space host named in the grants), so the
+ * origins cannot be pinned at build time. `frame-src` allows the CHAPI
+ * mediator (authn.io uses an iframe/popup).
  *
  * Dev mode loosens two things Vite's HMR needs: `'unsafe-inline'` scripts (the
  * React-refresh preamble is injected inline) and `ws:` + localhost origins on
@@ -35,10 +26,9 @@ function cspPlugin(): Plugin {
     name: 'life-advisor-csp',
     transformIndexHtml(html, ctx) {
       const isDev = ctx.server !== undefined
-      const wasOrigin = originOf(process.env.VITE_WAS_SERVER_URL)
-      const connect = ["'self'", ...(wasOrigin ? [wasOrigin] : [])]
+      const connect = ["'self'", 'https:']
       if (isDev) {
-        connect.push('ws:', 'http://localhost:*', 'https://localhost:*')
+        connect.push('ws:', 'http://localhost:*')
       }
       const scriptSrc = isDev ? "'self' 'unsafe-inline'" : "'self'"
       const directives = [

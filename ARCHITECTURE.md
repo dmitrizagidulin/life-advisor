@@ -97,7 +97,7 @@ signed response. The entry paths:
    invocation target and assert all grants share one space. There is no
    configured WAS host -- the wallet decides where the space lives.
 5. Build the WAS client, per-collection document ciphers, and RxDB; start
-   sync. Any data created in the anonymous local-first session is adopted into
+   sync. Any data created in the anonymous local session is adopted into
    the connected replica (last-write-wins merge by logical id).
 6. Persist the session record and enter the app.
 
@@ -114,9 +114,8 @@ read from local IndexedDB, with the seed persisted under a separate key in the
 same store (`expires` is the earliest expiry across the granted zcaps). If
 present and unexpired, agents, the WAS client, and ciphers are rebuilt from the
 stored zcaps with no wallet interaction. A restore miss or failure lands in the
-anonymous `local` session state -- with local-first onboarding the app renders
-over the anonymous local replica; with login-gated onboarding the router
-redirects to the login page. Either way, never a dead login screen.
+anonymous `local` session state, and the router redirects to the login page --
+never a dead login screen.
 
 ### Relying-party verification contract
 
@@ -340,8 +339,6 @@ src/
   stores/              the app-side storage glue: the collection-to-store
                        registry, per-entity zustand stores over the library's
                        createEntityStore, cross-store entity actions, export
-  dev/                 the fixed dev seed and the CHAPI-bypass dev connect
-                       harness (provisioned grants + connectWithGrants)
   domain/              pure, unit-tested domain logic (sort, actionItems,
                        projects, goals, questions, webLinks, focus, history,
                        parent, queries, factories)
@@ -362,12 +359,9 @@ invocation targets rather than deriving them, and does no provisioning.
   covering the pure domain layer (comparators, category moves, the status
   machine, focus, history, conversions, day-parent defaulting) and the
   encrypt/round-trip and LWW paths.
-- **Browser and end-to-end tests** with Playwright: an offline (no-WAS) config
-  that drives the full UI in one browser; a WAS-backed config that runs against a
-  local WAS server, uses two browser profiles sharing one seed and grant set to
-  verify replication and convergence, and exercises concurrent-edit LWW and
-  offline/online reSync recovery; and a wallet-backed config that drives the full
-  Login With Wallet flow against a local wallet.
+- **End-to-end tests** with Playwright: the config boots a local WAS server
+  and a freewallet dev server and drives the full Login With Wallet flow --
+  login, sync, and returning-session behavior -- against the real wallet.
 
 Tooling: pnpm, Node 24+, TypeScript strict, Vite. Consume `@interop/*` packages
 from the npm registry.
