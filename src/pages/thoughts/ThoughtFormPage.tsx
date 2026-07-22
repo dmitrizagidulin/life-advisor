@@ -1,5 +1,5 @@
 /**
- * Thought new/edit form (ports `thoughts#new` / `#edit`). A new thought defaults
+ * Thought new/edit form. A new thought defaults
  * onto today's day parent via the thought factory.
  */
 import { useState } from 'react'

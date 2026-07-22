@@ -18,7 +18,7 @@ const NOW = '2026-07-06T12:00:00.000Z'
 const TODAY = '2026-07-06'
 
 describe('createActionItem defaults', () => {
-  it('applies the ported defaults', () => {
+  it('applies the property defaults', () => {
     const item = createActionItem({ name: 'x', clientId: D }, NOW, 'id-1')
     expect(item).toMatchObject({
       id: 'id-1',

@@ -1,8 +1,7 @@
 /**
- * The dashboard (ports `action_items#index`): the Pensieve capture box, the strip
- * of active projects that have a next action, and the five MYWN category lists
- * with inline toggle / category-move / bump. The `someday` list excludes parented
- * (project) items, matching the Rails `include_projects=false`.
+ * The dashboard: the Pensieve capture box, the strip of active projects that
+ * have a next action, and the five MYWN category lists with inline toggle /
+ * category-move / bump. The `someday` list excludes parented (project) items.
  */
 import { Typography } from '@mui/material'
 import { useShallow } from 'zustand/react/shallow'

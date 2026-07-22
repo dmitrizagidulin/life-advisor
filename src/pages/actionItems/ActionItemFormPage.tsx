@@ -1,7 +1,6 @@
 /**
- * Action item new/edit form (ports `action_items#new` / `#edit`). On save the
- * `enforceCompletedAt` guard stamps a completion time when an item is marked done
- * without one, matching the Rails `before_update`.
+ * Action item new/edit form. On save the `enforceCompletedAt` guard stamps a
+ * completion time when an item is marked done without one.
  */
 import { useState } from 'react'
 import {
@@ -86,7 +85,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
           await insertLink(
             createWebLink({
               url: url.trim(),
-              parentType: 'action_item',
+              parentType: 'actionItem',
               parentKey: item.id,
               clientId: getClientId()
             })

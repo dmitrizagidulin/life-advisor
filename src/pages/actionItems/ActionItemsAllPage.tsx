@@ -1,5 +1,5 @@
 /**
- * All action items (ports `action_items#all`): every item, done or not, sorted by
+ * All action items: every item, done or not, sorted by
  * the action-item comparator, each an editable row.
  */
 import { useMemo } from 'react'
@@ -18,7 +18,7 @@ export function ActionItemsAllPage() {
   ))
   const allLinks = useWebLinks(useShallow((s) => [...s.byId.values()]))
   const linksByItem = useMemo(
-    () => bucketByParent(allLinks, 'action_item'),
+    () => bucketByParent(allLinks, 'actionItem'),
     [allLinks]
   )
   return (

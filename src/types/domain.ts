@@ -4,7 +4,7 @@
  * as a shared interoperability contract: extend additively, never repurpose a
  * field.
  *
- * Enum orders are load-bearing (they drive Rails-ported sort comparators); do
+ * Enum orders are load-bearing (they drive the sort comparators); do
  * not reorder. All timestamps are ISO-8601 strings. `id` is a `uuidv7()` logical
  * entity id -- distinct from the opaque random EDV resource id that keys the
  * at-rest row. `clientId` (random per install) is the last-write-wins tiebreak.
@@ -28,7 +28,7 @@ export const PARENT_TYPES = [
   'project',
   'day',
   'question',
-  'action_item',
+  'actionItem',
   'goal'
 ] as const
 
@@ -135,7 +135,7 @@ export interface ThoughtDoc {
 
 export interface CurrentFocusDoc {
   id: '_current_focus' // fixed logical id
-  focusType: 'project' | 'action_item' | 'goal' | 'question' | 'day'
+  focusType: 'project' | 'actionItem' | 'goal' | 'question' | 'day'
   focusKey: string // entity uuid, or 'YYYY-MM-DD'
   createdAt: string
   updatedAt: string

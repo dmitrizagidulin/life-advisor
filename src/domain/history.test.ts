@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest'
-import { buildHistory, completedSameDay, dayHistory, hashByDate } from './history'
+import { buildHistory, completedSameDay, dayHistory, groupByDay } from './history'
 import { createActionItem } from './factories'
 
 const D = 'dev'
@@ -37,7 +37,7 @@ describe('completedSameDay', () => {
   })
 })
 
-describe('hashByDate', () => {
+describe('groupByDay', () => {
   it('buckets by created day and completed day', () => {
     const item = ai({
       name: 'x',
@@ -45,7 +45,7 @@ describe('hashByDate', () => {
       createdAt: localIso(2026, 7, 5),
       completedAt: localIso(2026, 7, 6)
     })
-    const { createdByDay, completedByDay } = hashByDate([item])
+    const { createdByDay, completedByDay } = groupByDay([item])
     expect(createdByDay.get('2026-07-05')?.length).toBe(1)
     expect(completedByDay.get('2026-07-06')?.length).toBe(1)
   })
@@ -70,7 +70,7 @@ describe('dayHistory', () => {
       createdAt: localIso(2026, 7, 1),
       completedAt: localIso(2026, 7, 6, 12)
     })
-    const { createdByDay, completedByDay } = hashByDate([
+    const { createdByDay, completedByDay } = groupByDay([
       sameDay,
       createdOpen,
       completedFromEarlier

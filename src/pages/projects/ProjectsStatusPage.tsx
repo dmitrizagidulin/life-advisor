@@ -1,6 +1,5 @@
 /**
- * The completed / canceled project lists (ports `projects#completed` /
- * `projects#canceled`). The status comes from the route.
+ * The completed / canceled project lists. The status comes from the route.
  */
 import { Box, Typography } from '@mui/material'
 import { useShallow } from 'zustand/react/shallow'

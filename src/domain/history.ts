@@ -1,12 +1,7 @@
 /**
- * The day-history journal, ported from Rails `ActionItem.hash_by_date`,
- * DayHistory, and DayItem. Buckets action items by local day, then reports per
- * day over a trailing window.
- *
- * Rails bucketed by `localtime.to_date` but computed same-day completion with a
- * raw `to_date`; this port uses the local day consistently for both, matching
- * the app's local-day convention (the raw/local split was a server-timezone
- * artifact, not a domain rule).
+ * The day-history journal: buckets action items by local day, then reports per
+ * day over a trailing window. The local day (not UTC) is used consistently for
+ * both bucketing and same-day completion.
  */
 import { dayKeysBack, localDayKey, todayKey } from '@/lib/dates'
 import type { ActionItemDoc } from '@/types/domain'
@@ -21,7 +16,7 @@ export function completedSameDay(item: ActionItemDoc): boolean {
 }
 
 /** Bucket items by local created-day and (when completed) local completed-day. */
-export function hashByDate(items: ActionItemDoc[]): {
+export function groupByDay(items: ActionItemDoc[]): {
   createdByDay: Map<string, ActionItemDoc[]>
   completedByDay: Map<string, ActionItemDoc[]>
 } {
@@ -57,7 +52,7 @@ export interface DayHistory {
   items: ActionItemDoc[]
 }
 
-/** Build one day's history bucket from the pre-hashed maps (`DayHistory.new`). */
+/** Build one day's history bucket from the pre-grouped maps. */
 export function dayHistory(
   day: string,
   createdByDay: Map<string, ActionItemDoc[]>,
@@ -89,7 +84,7 @@ export function buildHistory(
   today: string = todayKey(),
   daysBack: number = 60
 ): DayHistory[] {
-  const { createdByDay, completedByDay } = hashByDate(items)
+  const { createdByDay, completedByDay } = groupByDay(items)
   return dayKeysBack(today, daysBack).map((day) =>
     dayHistory(day, createdByDay, completedByDay)
   )

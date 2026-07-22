@@ -1,5 +1,5 @@
 /**
- * Completed action items (ports `action_items#completed`), newest completion
+ * Completed action items, newest completion
  * first via the reversed action-item comparator.
  */
 import { useMemo } from 'react'
@@ -18,7 +18,7 @@ export function ActionItemsCompletedPage() {
   ))
   const allLinks = useWebLinks(useShallow((s) => [...s.byId.values()]))
   const linksByItem = useMemo(
-    () => bucketByParent(allLinks, 'action_item'),
+    () => bucketByParent(allLinks, 'actionItem'),
     [allLinks]
   )
   return (

@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from 'vitest'
-import { fromActionItem, nameDisplay, toActionItem } from './webLinks'
+import { fromActionItem, linkLabel, toActionItem } from './webLinks'
 import { createActionItem, createWebLink } from './factories'
 
 const D = 'dev'
@@ -11,21 +11,18 @@ const TODAY = '2026-07-06'
 const link = (o: Omit<Parameters<typeof createWebLink>[0], 'clientId'>) =>
   createWebLink({ ...o, clientId: D }, NOW, undefined, TODAY)
 
-describe('nameDisplay', () => {
+describe('linkLabel', () => {
   it('returns the name when present', () => {
-    expect(nameDisplay(link({ name: 'My Link', url: 'https://x.com' }))).toBe('My Link')
+    expect(linkLabel(link({ name: 'My Link', url: 'https://x.com' }))).toBe('My Link')
   })
 
-  it('truncates a long url to 50 chars (47 + ...) when name blank', () => {
+  it('returns the full url when the name is blank', () => {
     const url = 'https://example.com/' + 'a'.repeat(80)
-    const result = nameDisplay(link({ name: '', url }))
-    expect(result.length).toBe(50)
-    expect(result.endsWith('...')).toBe(true)
-    expect(result).toBe(url.slice(0, 47) + '...')
+    expect(linkLabel(link({ name: '', url }))).toBe(url)
   })
 
-  it('returns a short url as-is', () => {
-    expect(nameDisplay(link({ name: '   ', url: 'https://x.com' }))).toBe('https://x.com')
+  it('treats a whitespace-only name as blank', () => {
+    expect(linkLabel(link({ name: '   ', url: 'https://x.com' }))).toBe('https://x.com')
   })
 })
 
@@ -48,7 +45,7 @@ describe('toActionItem', () => {
     expect(item.parentKey).toBe(TODAY)
     expect(child.url).toBe('https://x.com/a')
     expect(child.name).toBe('')
-    expect(child.parentType).toBe('action_item')
+    expect(child.parentType).toBe('actionItem')
     expect(child.parentKey).toBe('item-1')
     expect(deleteWebLinkId).toBe(original.id)
   })
@@ -62,13 +59,13 @@ describe('fromActionItem', () => {
       'item-1'
     )
     const l1 = createWebLink(
-      { clientId: D, url: 'https://x.com/first', parentType: 'action_item', parentKey: 'item-1' },
+      { clientId: D, url: 'https://x.com/first', parentType: 'actionItem', parentKey: 'item-1' },
       NOW,
       'l1',
       TODAY
     )
     const l2 = createWebLink(
-      { clientId: D, url: 'https://x.com/second', parentType: 'action_item', parentKey: 'item-1' },
+      { clientId: D, url: 'https://x.com/second', parentType: 'actionItem', parentKey: 'item-1' },
       NOW,
       'l2',
       TODAY

@@ -1,5 +1,5 @@
 /**
- * Thought detail (ports `thoughts#show`): the thought text and its day parent.
+ * Thought detail: the thought text and its day parent.
  */
 import { useParams } from 'react-router'
 import { Box, Typography } from '@mui/material'

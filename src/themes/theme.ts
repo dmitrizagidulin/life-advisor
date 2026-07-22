@@ -6,7 +6,7 @@
 import { createTheme } from '@mui/material/styles'
 import type { Area, MywnCategory } from '@/types/domain'
 
-/** Accent colors for the four life areas (ports the Rails `area-*` classes). */
+/** Accent colors for the four life areas. */
 export const AREA_COLORS: Record<Area, string> = {
   work: '#1565c0',
   soul: '#6a1b9a',

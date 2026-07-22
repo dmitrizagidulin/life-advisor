@@ -1,6 +1,6 @@
 /**
- * The Parentable pattern: pointers `{parentType, parentKey}` and the virtual
- * "day" parent. Ported from the Rails Parentable concern.
+ * Parenting helpers: pointers `{parentType, parentKey}` and the virtual "day"
+ * parent.
  */
 import { todayKey } from '@/lib/dates'
 import type { ParentType } from '@/types/domain'
@@ -20,7 +20,7 @@ export function isChildOf(
   return (doc) => doc.parentType === type && doc.parentKey === key
 }
 
-/** Children of `(type, key)`, ordered createdAt DESC (the `for_parent` order). */
+/** Children of `(type, key)`, ordered createdAt DESC. */
 export function forParent<T extends Parented & { createdAt: string }>(
   docs: T[],
   type: ParentType,
@@ -64,8 +64,8 @@ export function hasParent(doc: Parented): boolean {
 
 /**
  * Default an un-parented doc (or one explicitly pointing at the literal `today`
- * day) onto today's local day. Ports `enforce_default_day_parent`: applies when
- * `parentType` is missing, or it is the `day`/`'today'` sentinel.
+ * day) onto today's local day: applies when `parentType` is missing, or it is
+ * the `day`/`'today'` sentinel.
  */
 export function enforceDefaultDayParent<T extends Parented>(
   doc: T,

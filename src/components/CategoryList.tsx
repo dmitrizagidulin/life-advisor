@@ -1,9 +1,9 @@
 /**
- * One MYWN category block on the dashboard/focus screens (ports
- * `action_items/_category_list` + `_new`): a header with the item count (turning
- * red past the Rails thresholds), an inline add-item form (optional url attaches
- * a child link), the Tomorrow-only bulk category moves, and the item rows.
- * `items` arrive already filtered + sorted by the caller.
+ * One MYWN category block on the dashboard/focus screens: a header with the
+ * item count (turning red past the per-category thresholds), an inline
+ * add-item form (optional url attaches a child link), the Tomorrow-only bulk
+ * category moves, and the item rows. `items` arrive already filtered + sorted
+ * by the caller.
  */
 import { useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
@@ -46,7 +46,7 @@ export function CategoryList({
   const insertLink = useWebLinks((s) => s.insert)
   const allLinks = useWebLinks(useShallow((s) => [...s.byId.values()]))
   const linksByItem = useMemo(
-    () => bucketByParent(allLinks, 'action_item'),
+    () => bucketByParent(allLinks, 'actionItem'),
     [allLinks]
   )
   const [name, setName] = useState('')
@@ -68,7 +68,7 @@ export function CategoryList({
       await insertLink(
         createWebLink({
           url: url.trim(),
-          parentType: 'action_item',
+          parentType: 'actionItem',
           parentKey: item.id,
           clientId: getClientId()
         })

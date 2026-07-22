@@ -1,5 +1,5 @@
 /**
- * Goal new/edit form (ports `goals#new` / `#edit`): name, description, and the
+ * Goal new/edit form: name, description, and the
  * active / accomplished flags.
  */
 import { useState } from 'react'

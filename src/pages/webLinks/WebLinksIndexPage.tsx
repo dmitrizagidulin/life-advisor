@@ -1,5 +1,5 @@
 /**
- * Web links index (ports `web_links#index`): an add-link box (standalone links
+ * Web links index: an add-link box (standalone links
  * default onto today's day parent) and the links list, each with edit / delete
  * and the "To Action Item" conversion.
  */
@@ -22,7 +22,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import { createWebLink } from '@/domain/factories'
-import { nameDisplay } from '@/domain/webLinks'
+import { linkLabel } from '@/domain/webLinks'
 import { compareChildren } from '@/domain/sort'
 import { getClientId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
@@ -81,20 +81,26 @@ export function WebLinksIndexPage() {
       {links.length === 0 ? (
         <Typography color="text.secondary">No links yet.</Typography>
       ) : (
-        <Table size="small">
+        <Table size="small" sx={{ tableLayout: 'fixed' }}>
           <TableBody>
             {links.map((link) => (
               <TableRow key={link.id} data-testid="weblink-row">
-                <TableCell>
+                <TableCell
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
                   {link.url ? (
                     <Link href={link.url} target="_blank" rel="noreferrer">
-                      {nameDisplay(link)}
+                      {linkLabel(link)}
                     </Link>
                   ) : (
-                    nameDisplay(link)
+                    linkLabel(link)
                   )}
                 </TableCell>
-                <TableCell align="right">
+                <TableCell align="right" sx={{ width: 240, whiteSpace: 'nowrap' }}>
                   <Button
                     size="small"
                     onClick={() => void convertLinkToActionItem(link)}

@@ -1,5 +1,5 @@
 /**
- * Goals index (ports `goals#index`): a new-goal box and the Active / Inactive /
+ * Goals index: a new-goal box and the Active / Inactive /
  * Accomplished groups from the domain `splitGoals`.
  */
 import { useState } from 'react'

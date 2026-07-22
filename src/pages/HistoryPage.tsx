@@ -1,5 +1,5 @@
 /**
- * The 60-day history journal (ports `history#index`). Each day reports items
+ * The 60-day history journal. Each day reports items
  * created and completed, computed by `domain/history.buildHistory`. Days with no
  * activity are omitted.
  */

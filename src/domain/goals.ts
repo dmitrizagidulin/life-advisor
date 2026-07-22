@@ -1,5 +1,5 @@
 /**
- * Goal domain selectors, ported from the Rails Goal model and goals controller.
+ * Goal domain selectors.
  */
 import type { GoalDoc } from '@/types/domain'
 import { compareGoals } from './sort'

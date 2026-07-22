@@ -1,5 +1,5 @@
 /**
- * Project status-machine buttons (ports `projects/_status_buttons_*`). The
+ * Project status-machine buttons. The
  * available transitions depend on the current status; each calls back with the
  * target status, which the caller feeds to `domain/projects.changeStatus`.
  */

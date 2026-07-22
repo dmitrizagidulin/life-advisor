@@ -1,5 +1,5 @@
 /**
- * Question detail (ports `questions#show`): the question, its answers with an
+ * Question detail: the question, its answers with an
  * inline add-answer box, and its attached links.
  */
 import { useState } from 'react'

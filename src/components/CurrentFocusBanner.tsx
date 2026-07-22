@@ -25,7 +25,7 @@ function useFocusLabel(
       const p = projects.get(focus.focusKey)
       return { text: p ? p.name : 'a project', to: `/projects/${focus.focusKey}` }
     }
-    case 'action_item': {
+    case 'actionItem': {
       const i = items.get(focus.focusKey)
       return {
         text: i ? i.name : 'an action item',

@@ -1,6 +1,6 @@
 /**
- * Web-link domain operations, ported from the Rails WebLink model plus the
- * link/action-item conversion round trip in the controllers.
+ * Web-link domain operations, including the link/action-item conversion round
+ * trip.
  */
 import { nowIso, todayKey } from '@/lib/dates'
 import type { ActionItemDoc, WebLinkDoc } from '@/types/domain'
@@ -9,35 +9,26 @@ import { createActionItem, createWebLink } from './factories'
 // Re-exported so link/thought callers have one import site for the day default.
 export { enforceDefaultDayParent } from './parent'
 
-/** Rails `String#truncate`: keep the whole string, or `n - 3` chars plus `...`. */
-function rubyTruncate(text: string, length: number): string {
-  if (text.length <= length) {
-    return text
-  }
-  return text.slice(0, length - 3) + '...'
-}
-
-/** Whitespace-only, empty, or absent counts as blank (Rails `blank?`). */
+/** Whitespace-only, empty, or absent counts as blank. */
 function isBlank(value: string | undefined): boolean {
   return value == null || value.trim() === ''
 }
 
 /**
- * Display label: the name, or -- when the name is blank and a url is present --
- * the url truncated to 50 characters (`name_display`).
+ * Display label: the name, or the url when the name is blank. Overflow is the
+ * renderer's concern (CSS ellipsis), so the url is returned untruncated.
  */
-export function nameDisplay(link: WebLinkDoc): string {
+export function linkLabel(link: WebLinkDoc): string {
   if (isBlank(link.name) && !isBlank(link.url)) {
-    return rubyTruncate(link.url, 50)
+    return link.url
   }
   return link.name ?? ''
 }
 
 /**
- * Convert a standalone web link into an action item (`from_web_link` +
- * `save_related`, then destroy the original). The new action item keeps the
- * link's parent and gains a child link (blank name, same url); the original link
- * is deleted. Caller persists the returned docs.
+ * Convert a standalone web link into an action item. The new action item keeps
+ * the link's parent and gains a child link (blank name, same url); the original
+ * link is deleted. Caller persists the returned docs.
  */
 export function toActionItem(
   link: WebLinkDoc,
@@ -65,7 +56,7 @@ export function toActionItem(
     {
       name: '',
       url: link.url,
-      parentType: 'action_item',
+      parentType: 'actionItem',
       parentKey: item.id,
       clientId: opts.clientId
     },
@@ -77,10 +68,10 @@ export function toActionItem(
 }
 
 /**
- * Convert an action item back into a standalone web link (`from_action_item`,
- * then destroy the item and its links). The new link takes the item's name, the
- * url of the item's first link, and the item's parent. Requires at least one
- * link. Caller persists.
+ * Convert an action item back into a standalone web link; the item and its
+ * links are deleted. The new link takes the item's name, the url of the item's
+ * first link, and the item's parent. Requires at least one link. Caller
+ * persists.
  */
 export function fromActionItem(
   item: ActionItemDoc,

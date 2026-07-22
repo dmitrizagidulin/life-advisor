@@ -1,5 +1,5 @@
 /**
- * Question new/edit form (ports `questions#new` / `#edit`): name and description.
+ * Question new/edit form: name and description.
  */
 import { useState } from 'react'
 import { TextField } from '@mui/material'

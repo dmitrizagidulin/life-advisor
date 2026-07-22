@@ -2,7 +2,7 @@
 
 A personal-productivity app (action items, projects, goals, questions, thoughts,
 web links, focus modes, history) built as a client-side React SPA in the "Bring
-Your Own Everything" model. Rewrite of the old Rails/Riak `life_advisor` app.
+Your Own Everything" model.
 
 The full architecture lives in `ARCHITECTURE.md` -- read it before making
 structural changes.
@@ -68,7 +68,7 @@ structural changes.
 - [wallet-to-webapp-demo](https://github.com/interop-alliance/wallet-to-webapp-demo)
   -- RP-side VPR construction reference.
 
-## Domain rules (ported from Rails; do not "improve")
+## Domain rules (deliberate; do not "improve")
 
 - Enum orders are load-bearing for sorting: MYWN categories
   `critical, tomorrow, opportunity, horizon, someday`; areas
@@ -78,7 +78,7 @@ structural changes.
   Projects/goals: bumpCount DESC, then name ASC. Questions: bumpCount DESC, then
   createdAt ASC.
 - Area filter quirk: querying area `admin` also matches `assistant`.
-- Parent pointers: `parentType` in {project, day, question, action_item, goal} +
+- Parent pointers: `parentType` in {project, day, question, actionItem, goal} +
   `parentKey`. "Days" are virtual: `parentType:'day'`, `parentKey:'YYYY-MM-DD'`
   (local time); unparented thoughts/web-links default to today.
 - Project status machine: `completed` sets completedAt and clears canceledAt;

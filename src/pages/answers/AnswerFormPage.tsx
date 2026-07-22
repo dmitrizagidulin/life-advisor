@@ -1,5 +1,5 @@
 /**
- * Answer new/edit form (ports `answers#new` / `#edit`). Answers are usually added
+ * Answer new/edit form. Answers are usually added
  * inline on the question-show screen; this standalone form takes the parent
  * question id from a `?question=<id>` query param on new.
  */

@@ -1,6 +1,6 @@
 /**
- * A compact project card for the dashboard's active-projects strip (ports
- * `projects/_active`): the project name and, when present, its next action.
+ * A compact project card for the dashboard's active-projects strip: the
+ * project name and, when present, its next action.
  */
 import { Link as RouterLink } from 'react-router'
 import { Box, Link, Typography } from '@mui/material'

@@ -1,5 +1,5 @@
 /**
- * Action item detail (ports `action_items#show`): the item's fields, a link back
+ * Action item detail: the item's fields, a link back
  * to its parent, and the attached links table.
  */
 import { Link as RouterLink, useParams } from 'react-router'
@@ -54,7 +54,7 @@ export function ActionItemShowPage() {
           </Typography>
         )}
       </Stack>
-      <LinksTable parentType="action_item" parentKey={item.id} />
+      <LinksTable parentType="actionItem" parentKey={item.id} />
     </Box>
   )
 }

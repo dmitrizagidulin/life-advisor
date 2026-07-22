@@ -1,14 +1,14 @@
 /**
- * Action-item domain operations, ported from the Rails ActionItem model. Pure:
- * each returns a NEW document (or a batch of them); the caller persists.
+ * Action-item domain operations. Pure: each returns a NEW document (or a batch
+ * of them); the caller persists.
  */
 import { nowIso } from '@/lib/dates'
 import { MYWN_CATEGORIES } from '@/types/domain'
 import type { ActionItemDoc, MywnCategory } from '@/types/domain'
 
 /**
- * Flip `done` and set/clear `completedAt` accordingly (`toggle_done!`): becoming
- * done stamps the completion time, un-doing clears it.
+ * Flip `done` and set/clear `completedAt` accordingly: becoming done stamps the
+ * completion time, un-doing clears it.
  */
 export function toggleDone(
   item: ActionItemDoc,
@@ -24,9 +24,9 @@ export function toggleDone(
 }
 
 /**
- * The `before_update` guard: a done item with no `completedAt` gets one stamped.
- * Deliberately does NOT clear `completedAt` on a not-done item -- that is the
- * ported Rails behavior (only `toggleDone` clears it).
+ * Invariant: a done item always has a `completedAt`; one gets stamped here if
+ * missing. Deliberately does NOT clear `completedAt` on a not-done item -- only
+ * `toggleDone` clears it.
  */
 export function enforceCompletedAt(
   item: ActionItemDoc,
@@ -38,7 +38,7 @@ export function enforceCompletedAt(
   return item
 }
 
-/** Increment the bump count (`bump!`). */
+/** Increment the bump count. */
 export function bump(
   item: ActionItemDoc,
   now: string = nowIso()
@@ -61,9 +61,8 @@ export function isValidCategory(category: string): category is MywnCategory {
 }
 
 /**
- * Bulk re-categorize every not-done item in `from` to `to` (`mywn_category_move`).
- * Throws on an invalid category, mirroring the Rails ArgumentError. Returns the
- * changed docs and the count moved.
+ * Bulk re-categorize every not-done item in `from` to `to`. Throws on an
+ * invalid category. Returns the changed docs and the count moved.
  */
 export function categoryMove(
   items: ActionItemDoc[],
@@ -72,7 +71,7 @@ export function categoryMove(
   now: string = nowIso()
 ): { moved: ActionItemDoc[]; count: number } {
   if (!isValidCategory(from) || !isValidCategory(to)) {
-    throw new Error('Invalid MYWN Category')
+    throw new Error(`Invalid MYWN category: ${!isValidCategory(from) ? from : to}`)
   }
   const moved = items
     .filter((item) => !item.done && item.mywnCategory === from)

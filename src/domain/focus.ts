@@ -1,7 +1,7 @@
 /**
- * Current-focus resolution, ported from the Rails Elefsis service and
- * CurrentFocus model. The stored default focus points at the `day`/`'today'`
- * sentinel; resolving it (or a missing doc) yields today's actual local day.
+ * Current-focus resolution. The stored default focus points at the
+ * `day`/`'today'` sentinel; resolving it (or a missing doc) yields today's
+ * actual local day.
  */
 import { nowIso, todayKey } from '@/lib/dates'
 import type { CurrentFocusDoc } from '@/types/domain'
@@ -16,8 +16,8 @@ export interface ResolvedFocus {
 }
 
 /**
- * Resolve the effective focus (`current_focus`): today's day when the doc is
- * absent or is the `day`/`'today'` sentinel, otherwise the doc's own target.
+ * Resolve the effective focus: today's day when the doc is absent or is the
+ * `day`/`'today'` sentinel, otherwise the doc's own target.
  */
 export function currentFocus(
   doc: CurrentFocusDoc | null | undefined,
@@ -29,7 +29,7 @@ export function currentFocus(
   return { focusType: doc.focusType, focusKey: doc.focusKey }
 }
 
-/** A focus doc pointing at the given entity/day (`focus_on` / `CurrentFocus.on`). */
+/** A focus doc pointing at the given entity/day. */
 export function focusOn(
   focusType: FocusType,
   focusKey: string,
@@ -39,7 +39,7 @@ export function focusOn(
   return createCurrentFocus({ focusType, focusKey, clientId }, now)
 }
 
-/** The default focus doc: today's day via the `'today'` sentinel (`reset_focus!`). */
+/** The default focus doc: today's day via the `'today'` sentinel. */
 export function resetFocus(
   clientId: string,
   now: string = nowIso()
@@ -51,8 +51,8 @@ export function resetFocus(
 }
 
 /**
- * Whether a non-default focus is set (`non_default_focus_exists?`): true unless
- * the effective focus is today's day.
+ * Whether a non-default focus is set: true unless the effective focus is
+ * today's day.
  */
 export function nonDefaultFocusExists(
   doc: CurrentFocusDoc | null | undefined,

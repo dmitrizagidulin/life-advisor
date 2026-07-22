@@ -1,7 +1,6 @@
 /**
- * A list of questions with bump / edit / delete (ports `questions/_list`), reused
- * by the questions index and the project-show screen. Rendered in the caller's
- * chosen sort order. Question bump mirrors the Rails `Question#bump!`.
+ * A list of questions with bump / edit / delete, reused by the questions index
+ * and the project-show screen. Rendered in the caller's chosen sort order.
  */
 import { Link as RouterLink } from 'react-router'
 import { Box, Button, IconButton, Link, Stack, Typography } from '@mui/material'

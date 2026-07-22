@@ -1,5 +1,5 @@
 /**
- * Projects index (ports `projects#index`): a new-project quick box then the
+ * Projects index: a new-project quick box then the
  * Active / Someday / Ideas groups, each sorted by the project comparator.
  */
 import { useState } from 'react'

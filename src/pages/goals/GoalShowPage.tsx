@@ -1,5 +1,5 @@
 /**
- * Goal detail (ports `goals#show`): parent goal, active/accomplished flags, an
+ * Goal detail: parent goal, active/accomplished flags, an
  * add-sub-goal box, the sub-goals list (domain `subGoals`), and the projects
  * serving this goal (domain `goalProjects`).
  */

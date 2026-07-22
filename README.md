@@ -38,7 +38,7 @@ Key properties:
   granted access to individual collections.
 
 The full design -- identity and key derivation, the login flows, the sync and
-conflict-resolution model, the id/timestamp planes, and the ported domain rules
+conflict-resolution model, the id/timestamp planes, and the domain rules
 -- lives in [ARCHITECTURE.md](ARCHITECTURE.md). Read it before making
 structural changes.
 

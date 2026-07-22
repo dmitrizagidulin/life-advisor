@@ -1,8 +1,7 @@
 /**
- * Per-area planning screen (ports `focus#focus_area`): the area's active and
- * someday projects plus the area-filtered MYWN category lists. Critical is not
- * area-filtered (matching Rails `all_todo(:critical)` with no area); the rest
- * filter by the route area, and someday excludes parented items.
+ * Per-area planning screen: the area's active and someday projects plus the
+ * area-filtered MYWN category lists. Critical is deliberately not area-filtered;
+ * the rest filter by the route area, and someday excludes parented items.
  */
 import { useParams } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'

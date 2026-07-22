@@ -1,6 +1,6 @@
 /**
  * Local-time date helpers. "Days" in this app are virtual, keyed by a local
- * `YYYY-MM-DD` string (the ported day convention); the wall-clock day boundary
+ * `YYYY-MM-DD` string (the app's day convention); the wall-clock day boundary
  * is the user's, so every key here is computed in LOCAL time, never UTC.
  * Domain sorting/last-write-wins use the ISO timestamps in the payload instead.
  */

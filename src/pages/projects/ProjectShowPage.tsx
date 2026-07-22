@@ -1,5 +1,5 @@
 /**
- * Project detail (ports `projects#show`): next action, status-machine buttons,
+ * Project detail: next action, status-machine buttons,
  * goals served, inline add-question and add-action-item, the todo and completed
  * item tables, the links table, and "Make Current Focus". All computed values
  * come from the domain layer (`nextAction`, `timeElapsed`, `changeStatus`).
@@ -112,7 +112,7 @@ export function ProjectShowPage() {
       await insertLink(
         createWebLink({
           url: itemUrl.trim(),
-          parentType: 'action_item',
+          parentType: 'actionItem',
           parentKey: item.id,
           clientId: getClientId()
         })

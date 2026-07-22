@@ -1,6 +1,5 @@
 /**
- * One action item as a table row (ports `action_items/_action_item` +
- * `_action_item_category_buttons`): done checkbox, name link, area-colored,
+ * One action item as a table row: done checkbox, name link, area-colored,
  * inline category-move buttons, bump, child links, and the item-to-link
  * conversion + cascade delete. Domain operations come from `domain/*`; this row
  * only wires them to the store.
@@ -24,7 +23,7 @@ import EditIcon from '@mui/icons-material/Edit'
 import { MYWN_CATEGORIES } from '@/types/domain'
 import { bump, setMywnCategory, toggleDone } from '@/domain/actionItems'
 import { forParent } from '@/domain/parent'
-import { nameDisplay } from '@/domain/webLinks'
+import { linkLabel } from '@/domain/webLinks'
 import { AREA_COLORS } from '@/themes/theme'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
@@ -53,7 +52,7 @@ export function ActionItemRow({
   const update = useActionItems((s) => s.update)
   const ownLinks = useWebLinks(useShallow((s) =>
     links === undefined
-      ? forParent([...s.byId.values()], 'action_item', item.id)
+      ? forParent([...s.byId.values()], 'actionItem', item.id)
       : EMPTY_WEB_LINKS
   ))
   const childLinks = links ?? ownLinks
@@ -97,8 +96,19 @@ export function ActionItemRow({
           <Box component="ul" sx={{ m: 0, pl: 3 }}>
             {childLinks.map((link) => (
               <li key={link.id}>
-                <Link href={link.url} target="_blank" rel="noreferrer">
-                  {nameDisplay(link)}
+                <Link
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  sx={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {linkLabel(link)}
                 </Link>
               </li>
             ))}

@@ -1,5 +1,5 @@
 /**
- * Questions index (ports `questions#index`): a new-question box plus the
+ * Questions index: a new-question box plus the
  * project-parented vs. everything-else split (`domain/questions.splitByProject`),
  * each sorted by the question comparator.
  */

@@ -1,5 +1,5 @@
 /**
- * Entity factories applying the ported Rails property defaults. Each takes the
+ * Entity factories applying the entity property defaults. Each takes the
  * required user fields plus a `clientId` (the LWW tiebreak), and injectable
  * `now`/`id` for deterministic tests. Web links and thoughts default onto
  * today's virtual day parent.

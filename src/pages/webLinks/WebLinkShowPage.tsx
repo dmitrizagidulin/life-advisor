@@ -1,9 +1,9 @@
 /**
- * Web link detail (ports `web_links#show`): the link target and its metadata.
+ * Web link detail: the link target and its metadata.
  */
 import { useParams } from 'react-router'
 import { Box, Link, Typography } from '@mui/material'
-import { nameDisplay } from '@/domain/webLinks'
+import { linkLabel } from '@/domain/webLinks'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { EntityShowHeader } from '@/components/EntityShowHeader'
 import { NotFound } from '@/components/NotFound'
@@ -23,9 +23,11 @@ export function WebLinkShowPage() {
         backLabel="Web Links"
         editTo={`/web-links/${link.id}/edit`}
       />
-      <Typography variant="h5">{nameDisplay(link)}</Typography>
+      <Typography variant="h5" sx={{ overflowWrap: 'anywhere' }}>
+        {linkLabel(link)}
+      </Typography>
       {link.url && (
-        <Typography sx={{ mt: 1 }}>
+        <Typography sx={{ mt: 1, overflowWrap: 'anywhere' }}>
           <Link href={link.url} target="_blank" rel="noreferrer">
             {link.url}
           </Link>

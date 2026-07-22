@@ -1,5 +1,5 @@
 /**
- * Web link new/edit form (ports `web_links#new` / `#edit`): url, name, and
+ * Web link new/edit form: url, name, and
  * description. New standalone links default onto today's day parent.
  */
 import { useState } from 'react'

@@ -1,12 +1,12 @@
 /**
- * Project domain operations, ported from the Rails Project model.
+ * Project domain operations.
  */
 import { nowIso } from '@/lib/dates'
 import type { ActionItemDoc, ProjectDoc, ProjectStatus } from '@/types/domain'
 import { compareActionItems } from './sort'
 
 /**
- * The status machine (`change_status!`): `completed` stamps `completedAt` and
+ * The status machine: `completed` stamps `completedAt` and
  * clears `canceledAt`; `canceled` does the reverse; any other status clears both.
  */
 export function changeStatus(
@@ -41,7 +41,7 @@ export function changeStatus(
   }
 }
 
-/** Increment the bump count (`bump!`). */
+/** Increment the bump count. */
 export function bump(
   project: ProjectDoc,
   now: string = nowIso()
@@ -50,9 +50,9 @@ export function bump(
 }
 
 /**
- * The project's first not-done action item by the action-item comparator
- * (`next_action`). `items` may be any action-item pool; only children of this
- * project are considered.
+ * The project's first not-done action item by the action-item comparator.
+ * `items` may be any action-item pool; only children of this project are
+ * considered.
  */
 export function nextAction(
   project: ProjectDoc,
@@ -66,14 +66,14 @@ export function nextAction(
     .sort(compareActionItems)[0]
 }
 
-/** Sum of `timeElapsed` (hours) over the given items (`time_elapsed`). */
+/** Sum of `timeElapsed` (hours) over the given items. */
 export function timeElapsed(items: ActionItemDoc[]): number {
   return items.reduce((total, item) => total + item.timeElapsed, 0)
 }
 
 /**
- * Add or remove `goalId` from the project's served goals (`serve_goal_toggle`):
- * present goals are dropped, absent goals are added.
+ * Add or remove `goalId` from the project's served goals: present goals are
+ * dropped, absent goals are added.
  */
 export function serveGoalToggle(
   project: ProjectDoc,

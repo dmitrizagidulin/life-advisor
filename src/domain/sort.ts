@@ -1,8 +1,7 @@
 /**
- * Ported Rails `<=>` comparators. Order is load-bearing and matches the enum
- * orders in `types/domain.ts`; do not "improve" the tie-breaks. Every comparator
- * returns the usual -1/0/1 so `[...xs].sort(compareX)` reproduces the Rails
- * `sort` (ascending on `<=>`) result.
+ * Sort comparators for the domain entities. Order is load-bearing and matches
+ * the enum orders in `types/domain.ts`; do not "improve" the tie-breaks. Every
+ * comparator returns -1/0/1 for use with `Array.prototype.sort`.
  *
  * ISO-8601 timestamp strings sort lexically the same as chronologically, so
  * string comparison is the correct time comparison here.
@@ -33,7 +32,7 @@ function cmpNum(a: number, b: number): number {
 
 /**
  * Action items: bumpCount DESC, then AREAS enum order ASC, then createdAt DESC.
- * The area step is skipped when either area is absent (ported guard).
+ * The area step is skipped when either area is absent.
  */
 export function compareActionItems(a: ActionItemDoc, b: ActionItemDoc): number {
   const bump = cmpNum(b.bumpCount, a.bumpCount)
@@ -103,7 +102,7 @@ export function compareDayItems(a: ActionItemDoc, b: ActionItemDoc): number {
 
 /**
  * Completed items as the project-show screen orders them: the action-item
- * comparator applied in reverse (`sort {|x,y| y <=> x}`).
+ * comparator applied in reverse.
  */
 export function sortActionItemsCompletedDesc(
   items: ActionItemDoc[]

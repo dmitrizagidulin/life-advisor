@@ -1,5 +1,5 @@
 /**
- * Project new/edit form (ports `projects#new` / `#edit`). Status changes here go
+ * Project new/edit form. Status changes here go
  * through the domain `changeStatus` so completed/canceled timestamps stay
  * consistent with the status buttons.
  */

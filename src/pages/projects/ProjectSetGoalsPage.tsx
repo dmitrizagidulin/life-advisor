@@ -1,5 +1,5 @@
 /**
- * Set-goals screen (ports `projects#set_goals` + `serve_goal_toggle`): checkboxes
+ * Set-goals screen: checkboxes
  * over the active goals, toggling each in/out of the project's `goalIds` via the
  * domain `serveGoalToggle`.
  */

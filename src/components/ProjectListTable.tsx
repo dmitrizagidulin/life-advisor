@@ -1,5 +1,5 @@
 /**
- * A table of projects (ports `projects/_projects_list` + `_project`): completion
+ * A table of projects: completion
  * counts, next action, status-machine buttons, elapsed hours, bump and delete.
  * Reused by the projects index and the completed/canceled status lists.
  */

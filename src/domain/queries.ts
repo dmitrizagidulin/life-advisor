@@ -1,7 +1,7 @@
 /**
- * In-memory selectors replacing the Rails riak_search queries. All pure filters
- * over already-hydrated docs; callers apply the sort comparators. Ported exactly,
- * including the `admin`-also-matches-`assistant` area quirk.
+ * In-memory entity selectors. All pure filters over already-hydrated docs;
+ * callers apply the sort comparators. The `admin`-also-matches-`assistant` area
+ * quirk is deliberate.
  */
 import type {
   ActionItemDoc,
@@ -21,10 +21,9 @@ function areaMatches(itemArea: Area, filter: Area): boolean {
 }
 
 /**
- * Not-done items (`all_todo`), optionally narrowed by MYWN category and area.
- * With `includeProjectItems` false, items carrying any parent key are dropped
- * (the Rails filter keys on `parent_key`, so this excludes every parented item,
- * not only project children).
+ * Not-done items, optionally narrowed by MYWN category and area. With
+ * `includeProjectItems` false, items carrying any `parentKey` are dropped --
+ * every parented item, not only project children.
  */
 export function allTodo(
   items: ActionItemDoc[],
@@ -49,12 +48,12 @@ export function allTodo(
   })
 }
 
-/** All completed action items (`all_completed`). */
+/** All completed action items. */
 export function allCompleted(items: ActionItemDoc[]): ActionItemDoc[] {
   return items.filter((item) => item.done)
 }
 
-/** Projects with the given status (`all_for_status`). */
+/** Projects with the given status. */
 export function allForStatus(
   projects: ProjectDoc[],
   status: ProjectStatus
@@ -63,7 +62,7 @@ export function allForStatus(
 }
 
 /**
- * Projects in an area at a status (`focus_on_area`). Exact area match -- the
+ * Projects in an area at a status. Exact area match -- the
  * `admin`/`assistant` quirk does not apply here.
  */
 export function focusOnArea(
@@ -75,7 +74,7 @@ export function focusOnArea(
 }
 
 /**
- * Active goals (`active_goals`): `active` is true; accomplished goals are
+ * Active goals: `active` is true; accomplished goals are
  * excluded unless `includeAccomplished`.
  */
 export function activeGoals(

@@ -1,5 +1,5 @@
 /**
- * Thoughts index (ports `thoughts#index`): the Pensieve capture box and the
+ * Thoughts index: the Pensieve capture box and the
  * thoughts list newest-first (createdAt DESC), each editable/deletable.
  */
 import { Link as RouterLink } from 'react-router'

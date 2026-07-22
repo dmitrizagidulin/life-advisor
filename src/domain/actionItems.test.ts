@@ -51,7 +51,7 @@ describe('enforceCompletedAt', () => {
     expect(enforceCompletedAt(item, NOW).completedAt).toBe('2026-01-01T00:00:00Z')
   })
 
-  it('does NOT clear completedAt on a not-done item (ported Rails behavior)', () => {
+  it('does NOT clear completedAt on a not-done item', () => {
     const item = ai({ name: 'x', done: false, completedAt: '2026-01-01T00:00:00Z' })
     expect(enforceCompletedAt(item, NOW).completedAt).toBe('2026-01-01T00:00:00Z')
   })
@@ -105,7 +105,7 @@ describe('categoryMove', () => {
   })
 
   it('throws on an invalid category', () => {
-    expect(() => categoryMove([], 'bogus', 'critical')).toThrow('Invalid MYWN Category')
-    expect(() => categoryMove([], 'critical', 'bogus')).toThrow('Invalid MYWN Category')
+    expect(() => categoryMove([], 'bogus', 'critical')).toThrow('Invalid MYWN category: bogus')
+    expect(() => categoryMove([], 'critical', 'bogus')).toThrow('Invalid MYWN category: bogus')
   })
 })

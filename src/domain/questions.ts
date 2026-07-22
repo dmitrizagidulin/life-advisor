@@ -1,10 +1,6 @@
 /**
- * Question domain operations, ported from the Rails Question model and questions
- * controller.
- *
- * Note: the Rails app carries `answered`/`answered_at` fields but never sets them
- * (no controller path toggles answering). `setAnswered` fills that gap following
- * the same set/clear-timestamp shape as action-item `toggleDone`.
+ * Question domain operations. `setAnswered` follows the same
+ * set/clear-timestamp shape as action-item `toggleDone`.
  */
 import { nowIso } from '@/lib/dates'
 import type { QuestionDoc } from '@/types/domain'
@@ -23,7 +19,7 @@ export function setAnswered(
   }
 }
 
-/** Increment the bump count (`bump!`). */
+/** Increment the bump count. */
 export function bump(
   question: QuestionDoc,
   now: string = nowIso()
@@ -32,8 +28,7 @@ export function bump(
 }
 
 /**
- * The questions-index split into project-parented and everything else
- * (`parent_type == 'project'`).
+ * The questions-index split into project-parented and everything else.
  */
 export function splitByProject(questions: QuestionDoc[]): {
   project: QuestionDoc[]

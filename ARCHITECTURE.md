@@ -5,8 +5,8 @@ questions and answers, thoughts, web links, focus modes, and a history journal.
 It is a client-side React single-page app built in the "Bring Your Own
 Everything" model: the user brings their own identity (a wallet) and their own
 storage (Wallet Attached Storage), and the app stores everything encrypted in
-that user-owned space. It is a rewrite of an older Rails/Riak application; the
-domain rules are ported deliberately and should not be "improved."
+that user-owned space. The domain rules are deliberate and should not be
+"improved."
 
 This document is the orientation guide for new contributors. Read it before
 making structural changes.
@@ -261,11 +261,10 @@ Sorting and non-equality logic would stay client-side regardless; index keys, if
 adopted, would derive per-collection with the same HKDF scheme as vault keys so
 that sharing a collection also carries query capability.
 
-## Domain rules (ported; do not "improve")
+## Domain rules (deliberate; do not "improve")
 
 Domain logic lives in `src/domain/` and is pure -- no React, no storage imports
--- and unit-tested. The rules below are ported verbatim from the original app and
-are load-bearing.
+-- and unit-tested. The rules below are deliberate and load-bearing.
 
 ### Enum orders (order matters for sorting)
 
@@ -273,7 +272,7 @@ are load-bearing.
 MYWN categories: critical, tomorrow, opportunity, horizon, someday
 areas:           work, soul, admin, assistant
 project status:  idea, active, someday, canceled, completed
-parent types:    project, day, question, action_item, goal
+parent types:    project, day, question, actionItem, goal
 ```
 
 ### Sort orders
@@ -293,7 +292,7 @@ preserved (as an OR of two equality terms, or a client-side filter).
 ### Parent pointers and virtual days
 
 Entities point at a parent with `parentType` (one of project, day, question,
-action_item, goal) plus `parentKey`. "Days" are virtual: `parentType:'day'` with
+actionItem, goal) plus `parentKey`. "Days" are virtual: `parentType:'day'` with
 `parentKey:'YYYY-MM-DD'` in local time and no stored day document. Unparented
 thoughts and web links default to today's day (including mapping a literal
 `'today'` to today's date).
@@ -306,8 +305,7 @@ Setting status `completed` sets `completedAt` and clears `canceledAt`; setting
 ### Web-link / action-item conversions
 
 Web links convert to action items and back (each conversion creates the new
-entity, moves the associated link, and deletes the original), a round-trip
-ported from the original app.
+entity, moves the associated link, and deletes the original).
 
 ### Current-focus singleton
 

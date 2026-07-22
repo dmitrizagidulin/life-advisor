@@ -1,7 +1,7 @@
 /**
  * Web links attached to a parent (project / action item / question), with an
  * inline add-link form, per-row delete, and the "To Action Item" conversion
- * (ports `web_links/_list` + `_link`). Links are ordered createdAt DESC via the
+ *. Links are ordered createdAt DESC via the
  * Parentable `forParent`.
  */
 import { useState } from 'react'
@@ -21,7 +21,7 @@ import {
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { createWebLink } from '@/domain/factories'
-import { nameDisplay } from '@/domain/webLinks'
+import { linkLabel } from '@/domain/webLinks'
 import { forParent } from '@/domain/parent'
 import { getClientId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
@@ -89,26 +89,34 @@ export function LinksTable({
         </Button>
       </Stack>
       {links.length > 0 && (
-        <Table size="small">
+        <Table size="small" sx={{ tableLayout: 'fixed' }}>
           <TableHead>
             <TableRow>
               <TableCell>Link</TableCell>
-              <TableCell align="right">Actions</TableCell>
+              <TableCell align="right" sx={{ width: 200 }}>
+                Actions
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {links.map((link) => (
               <TableRow key={link.id} data-testid="link-row">
-                <TableCell>
+                <TableCell
+                  sx={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
                   {link.url ? (
                     <Link href={link.url} target="_blank" rel="noreferrer">
-                      {nameDisplay(link)}
+                      {linkLabel(link)}
                     </Link>
                   ) : (
-                    nameDisplay(link)
+                    linkLabel(link)
                   )}
                 </TableCell>
-                <TableCell align="right">
+                <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                   <Button
                     size="small"
                     onClick={() => void convertLinkToActionItem(link)}

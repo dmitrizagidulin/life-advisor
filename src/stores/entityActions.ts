@@ -15,7 +15,7 @@ import type { ActionItemDoc, WebLinkDoc } from '@/types/domain'
 /** The web links pointing at an action item (its child links). */
 export function linksForItem(item: ActionItemDoc): WebLinkDoc[] {
   const links = [...useWebLinks.getState().byId.values()]
-  return forParent(links, 'action_item', item.id)
+  return forParent(links, 'actionItem', item.id)
 }
 
 /** Convert a standalone web link into an action item plus a child link. */
@@ -45,7 +45,7 @@ export async function convertActionItemToLink(
   }
 }
 
-/** Delete an action item and its child links (ports Rails `destroy_related`). */
+/** Delete an action item and its child links. */
 export async function deleteActionItemCascade(
   item: ActionItemDoc
 ): Promise<void> {

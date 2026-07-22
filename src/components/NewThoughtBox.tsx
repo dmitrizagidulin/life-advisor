@@ -1,5 +1,5 @@
 /**
- * The "Pensieve" quick-capture box (ports `thoughts/_new`): a new thought defaults
+ * The "Pensieve" quick-capture box: a new thought defaults
  * onto today's virtual day parent via the thought factory.
  */
 import { useState } from 'react'
