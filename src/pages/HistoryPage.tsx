@@ -1,7 +1,7 @@
 /**
  * The 60-day history journal (ports `history#index`). Each day reports items
  * created and completed, computed by `domain/history.buildHistory`. Days with no
- * activity render the Rails "Nothing happened?" line.
+ * activity are omitted.
  */
 import { Box, Chip, List, ListItem, Stack, Typography } from '@mui/material'
 import { useShallow } from 'zustand/react/shallow'
@@ -27,7 +27,7 @@ function dayLabel(dayKey: string): string {
 
 export function HistoryPage() {
   const items = useActionItems(useShallow((s) => [...s.byId.values()]))
-  const history = buildHistory(items)
+  const history = buildHistory(items).filter((day) => day.hasActivity)
 
   return (
     <Box data-testid="history-page">
@@ -37,43 +37,35 @@ export function HistoryPage() {
       {history.map((day) => (
         <Box key={day.day} sx={{ mb: 2 }} data-testid="history-day">
           <Typography variant="h6">{dayLabel(day.day)}</Typography>
-          {day.hasActivity ? (
-            <>
-              <Stack direction="row" spacing={1} sx={{ my: 0.5 }}>
-                {day.numCreatedItems > 0 && (
-                  <Chip
-                    size="small"
-                    color="error"
-                    label={`${day.numCreatedItems} created${
-                      day.numCompletedSameDay > 0
-                        ? `, ${day.numCompletedSameDay} same-day`
-                        : ''
-                    }`}
-                  />
-                )}
-                <Chip
-                  size="small"
-                  color="success"
-                  label={`${day.numCompletedItems} completed`}
-                />
-              </Stack>
-              <List dense disablePadding>
-                {day.items.map((item) => (
-                  <ListItem key={item.id} disableGutters>
-                    <Typography variant="body2">
-                      {timeLabel(daySortKey(item))} --{' '}
-                      <strong>{item.done ? 'Complete:' : 'Added:'}</strong>{' '}
-                      {item.name}
-                    </Typography>
-                  </ListItem>
-                ))}
-              </List>
-            </>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              Nothing happened? Seems unlikely.
-            </Typography>
-          )}
+          <Stack direction="row" spacing={1} sx={{ my: 0.5 }}>
+            {day.numCreatedItems > 0 && (
+              <Chip
+                size="small"
+                color="error"
+                label={`${day.numCreatedItems} created${
+                  day.numCompletedSameDay > 0
+                    ? `, ${day.numCompletedSameDay} same-day`
+                    : ''
+                }`}
+              />
+            )}
+            <Chip
+              size="small"
+              color="success"
+              label={`${day.numCompletedItems} completed`}
+            />
+          </Stack>
+          <List dense disablePadding>
+            {day.items.map((item) => (
+              <ListItem key={item.id} disableGutters>
+                <Typography variant="body2">
+                  {timeLabel(daySortKey(item))} --{' '}
+                  <strong>{item.done ? 'Complete:' : 'Added:'}</strong>{' '}
+                  {item.name}
+                </Typography>
+              </ListItem>
+            ))}
+          </List>
         </Box>
       ))}
     </Box>
