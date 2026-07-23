@@ -1,5 +1,11 @@
 # life-advisor Changelog
 
+## 0.1.1 - 2026-07-23
+
+### Added
+
+- Add footer with app version.
+
 ## 0.1.0 - 2026-07-23
 
 Initial implementation: a client-side React single-page app for personal

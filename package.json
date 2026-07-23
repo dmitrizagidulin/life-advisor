@@ -1,7 +1,7 @@
 {
   "name": "life-advisor",
   "description": "A personal-productivity app (action items, projects, goals, questions, thoughts, web links, focus modes, history) built as a client-side React SPA in the 'Bring Your Own Everything' (BYOE) model, on Wallet Attached Storage.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
