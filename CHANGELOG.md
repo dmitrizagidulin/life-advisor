@@ -1,6 +1,6 @@
 # life-advisor Changelog
 
-## 0.1.0 - TBD
+## 0.1.0 - 2026-07-23
 
 Initial implementation: a client-side React single-page app for personal
 productivity (action items, projects, goals, questions and answers, thoughts,
