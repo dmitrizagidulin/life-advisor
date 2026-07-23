@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.dev.json && vite build",
+    "deploy": "pnpm run build && wrangler deploy",
+    "deploy:list": "wrangler deployments status",
     "typecheck": "tsc --noEmit -p tsconfig.dev.json",
     "fix": "eslint --fix src test && pnpm run format",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"test/**/*.ts\" \"*.md\"",
@@ -47,7 +49,8 @@
     "typescript-eslint": "^8.59.4",
     "vite": "^8.0.14",
     "vitest": "^4.1.7",
-    "was-teaching-server": "^0.13.0"
+    "was-teaching-server": "^0.14.0",
+    "wrangler": "^4.113.0"
   },
   "packageManager": "pnpm@11.5.0",
   "engines": {

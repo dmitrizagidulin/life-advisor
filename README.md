@@ -11,6 +11,7 @@
 - [Install](#install)
 - [Usage](#usage)
 - [Testing](#testing)
+- [Deploying](#deploying)
 - [Contribute](#contribute)
 - [License](#license)
 
@@ -101,6 +102,37 @@ Unit tests cover the pure domain layer (`src/domain/`) and the encryption and
 conflict-resolution paths. The browser suite boots a local WAS server and a
 freewallet dev server (from a sibling checkout named by `FREEWALLET_DIR`) and
 drives the real Login With Wallet flow end to end.
+
+## Deploying
+
+The app deploys as static assets to
+[Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/).
+Configuration lives in `wrangler.jsonc`: it serves the `dist/` build output and
+uses single-page-application fallback, so deep links into client-side routes
+serve `index.html`.
+
+One-time setup: link the Wrangler CLI (installed as a devDependency) to a
+Cloudflare account:
+
+```
+pnpm exec wrangler login
+```
+
+(For non-interactive deploys, e.g. from CI, set `CLOUDFLARE_API_TOKEN` to a
+token created from the "Edit Cloudflare Workers" template instead.)
+
+Then to deploy (typecheck + build + upload):
+
+```
+pnpm run deploy
+```
+
+Note: it must be `pnpm run deploy`; bare `pnpm deploy` invokes pnpm's built-in
+workspace command, not this script.
+
+The first deploy prints the `*.workers.dev` URL. Remember that the app's origin
+must be allowed by the WAS server's CORS configuration, and that CHAPI wallet
+registration is per-origin.
 
 ## Contribute
 

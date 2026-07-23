@@ -13,8 +13,14 @@ const env: Record<string, string | undefined> =
   (import.meta.env as Record<string, string | undefined> | undefined) ?? {}
 
 // This app's own origin, used later for CHAPI wallet registration and the
-// anti-phishing origin binding on the app-key credential.
-export const APP_ORIGIN = env.VITE_APP_ORIGIN || 'http://localhost:5173'
+// anti-phishing origin binding on the app-key credential. Derived from the
+// page's actual origin so every deployment target works unconfigured; the env
+// override and localhost fallback cover non-browser (Node test) contexts.
+export const APP_ORIGIN =
+  env.VITE_APP_ORIGIN ||
+  (typeof window !== 'undefined'
+    ? window.location.origin
+    : 'http://localhost:5173')
 
 // Replication tuning (optional). Undefined leaves the adapter defaults.
 export const WAS_SYNC_BATCH_SIZE: number | undefined =
