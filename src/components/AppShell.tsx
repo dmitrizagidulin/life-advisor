@@ -145,6 +145,11 @@ export function AppShell() {
         {location.pathname !== '/login' && <CurrentFocusBanner />}
         <Outlet />
       </Container>
+      <Box component="footer" sx={{ py: 2, textAlign: 'center' }}>
+        <Typography variant="caption" color="text.secondary">
+          life-advisor v{__APP_VERSION__}
+        </Typography>
+      </Box>
       <LogoutDialog open={logoutOpen} onClose={() => setLogoutOpen(false)} />
       <ClearDataDialog open={clearOpen} onClose={() => setClearOpen(false)} />
     </Box>

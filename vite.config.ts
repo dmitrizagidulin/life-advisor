@@ -1,9 +1,13 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const srcDir = fileURLToPath(new URL('./src', import.meta.url))
+const { version } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8')
+) as { version: string }
 
 /**
  * Injects a Content-Security-Policy meta tag into index.html. The seed and vault
@@ -53,6 +57,9 @@ function cspPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), cspPlugin()],
+  define: {
+    __APP_VERSION__: JSON.stringify(version)
+  },
   // No inline module-preload polyfill: modern (Chromium) targets support
   // <link rel="modulepreload"> natively, so the production HTML carries no
   // inline script and script-src 'self' holds.
