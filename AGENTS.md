@@ -13,9 +13,9 @@ structural changes.
   (CHAPI) against freewallet and stores data in the USER's Wallet Attached
   Storage (WAS) space using wallet-delegated zcaps. It never holds the wallet
   root key and never provisions the space.
-- **App identity + vault keys** come from a 32-byte master seed stored in the
+- **App identity + vault keys** come from a 32-byte app root seed stored in the
   wallet as a self-issued `LifeAdvisorKey` credential (minted wallet-side on
-  first run and returned via the one-popup App Connect login). The master
+  first run and returned via the one-popup App Connect login). The root seed
   derives the stable `did:key` controller (
   CapabilityAgent.fromSeed on the raw bytes -- never fromSecret, which
   salt-hashes a string); each collection's X25519 EDV key-agreement key derives

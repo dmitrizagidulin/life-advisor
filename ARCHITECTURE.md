@@ -30,10 +30,10 @@ making structural changes.
 
 ## Identity and keys
 
-### Master seed and the LifeAdvisorKey credential
+### App root seed and the LifeAdvisorKey credential
 
 The app's identity and all of its vault keys derive from a single 32-byte
-**master seed**. That seed is not generated per device or held only locally; it
+**app root seed**. That seed is not generated per device or held only locally; it
 is stored in the user's wallet as a self-issued verifiable credential of type
 `LifeAdvisorKey`. The credential's subject carries the seed (base64url-encoded)
 plus an `origin` field used as an anti-phishing check at login. It is signed by
@@ -45,25 +45,25 @@ collection key. Nothing about the seed is device-specific.
 
 ### Derivation
 
-From the master seed:
+From the root seed:
 
-- **Controller identity.** The master seed derives a stable `did:key` controller
+- **Controller identity.** The root seed derives a stable `did:key` controller
   DID (via `CapabilityAgent.fromSeed` on the raw bytes) and its signer. This DID
   is the same on every device and is the identity that WAS zcaps are delegated
   to.
 - **Per-collection vault keys.** Each collection's X25519 EDV key-agreement key
-  (KAK) is derived separately with HKDF-SHA256 over the master, using
+  (KAK) is derived separately with HKDF-SHA256 over the root seed, using
   `info = 'kak:v1:<collectionId>'`, then the standard Ed25519-to-X25519
   derivation. Collections are encrypted with per-collection KAKs from day one.
 
 Per-collection keys are the unit of sharing. Because HKDF is one-way, handing
-another app one collection's key exposes nothing about the master seed or the
+another app one collection's key exposes nothing about the root seed or the
 sibling collections, and no re-encryption migration is needed to start sharing.
 **Never encrypt two collections with the same KAK.**
 
 A subtlety worth pinning: the pinned convention (owned by `@interop/was-react`'s
 identity layer) is `CapabilityAgent.fromSeed({seed})` on the RAW 32 bytes, for
-both the master identity and the per-collection KAKs -- never `fromSecret`,
+both the root identity and the per-collection KAKs -- never `fromSecret`,
 which salt-hashes a STRING and would derive a different key for a byte array vs
 its text form. This convention is part of the shared-key contract: a mismatch
 silently derives different DIDs and KAKs for different consumers.
@@ -373,11 +373,11 @@ afterthought. Several decisions exist to keep it possible:
   shared space, so a second app requesting the same names gets zcaps to the same
   collections. What a second app lacks today is only the decryption key.
 - **Per-collection keys are the sharing unit.** Because vault keys are already
-  per-collection (HKDF from the master), sharing a collection means minting a
+  per-collection (HKDF from the root seed), sharing a collection means minting a
   credential carrying just that one derived collection seed (plus authorized
   origins) into the wallet; the second app requests that credential type and a
   zcap for the same collection. Consent granularity matches zcap granularity,
-  HKDF one-wayness protects the master and siblings, and each app keeps its own
+  HKDF one-wayness protects the root seed and siblings, and each app keeps its own
   controller DID and grants. Per-collection key rotation is a new HKDF version tag
   for that collection plus a re-encrypt of just that collection.
 - **Document schemas are a shared contract.** Once another app reads these

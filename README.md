@@ -45,10 +45,10 @@ structural changes.
 
 ## Security
 
-- The app's identity and all vault keys derive from a single 32-byte master
+- The app's identity and all vault keys derive from a single 32-byte app root
   seed, stored in the user's wallet as a self-issued `LifeAdvisorKey`
   credential and recovered at login. Each collection's encryption key derives
-  from the master via HKDF, so sharing one collection exposes nothing about the
+  from the root seed via HKDF, so sharing one collection exposes nothing about the
   others.
 - The wallet is the trust anchor; CHAPI origin binding plus an `origin` field
   baked into the seed credential guard against phishing.

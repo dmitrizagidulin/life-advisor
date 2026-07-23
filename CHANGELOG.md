@@ -23,13 +23,13 @@ storage space.
   re-encryption (advancing an envelope sequence) for updates and tombstones for
   deletes. Concurrent edits from multiple devices converge by last-write-wins on
   the payload timestamp, with a per-install client id as the tiebreak.
-- Per-collection encryption keys derived from a single 32-byte master seed: a
+- Per-collection encryption keys derived from a single 32-byte root seed: a
   stable did:key controller identity plus one X25519 key-agreement key per
   collection via HKDF, so a single collection's key can later be shared with
-  another interoperable app without exposing the master or sibling collections.
+  another interoperable app without exposing the root seed or sibling collections.
 - Login With Wallet (CHAPI). A single "App Connect" popup authenticates the
   user and returns the app-key credential (minted wallet-side on first run,
-  holding the master seed for cross-device recovery) together with
+  holding the root seed for cross-device recovery) together with
   wallet-delegated capabilities scoped to each storage collection. First
   login, returning login on a new device, and zero-popup hot restore of a
   persisted session are all supported.
