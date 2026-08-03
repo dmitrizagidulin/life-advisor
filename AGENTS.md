@@ -13,24 +13,31 @@ structural changes.
   (CHAPI) against freewallet and stores data in the USER's Wallet Attached
   Storage (WAS) space using wallet-delegated zcaps. It never holds the wallet
   root key and never provisions the space.
-- **App identity + vault keys** come from a 32-byte app root seed stored in the
+- **App identity + vault key** come from a 32-byte app root seed stored in the
   wallet as a self-issued `LifeAdvisorKey` credential (minted wallet-side on
   first run and returned via the one-popup App Connect login). The root seed
   derives the stable `did:key` controller (
   CapabilityAgent.fromSeed on the raw bytes -- never fromSecret, which
-  salt-hashes a string); each collection's X25519 EDV key-agreement key derives
-  via HKDF (`info = 'kak:v1:<collectionId>'`, fed to fromSeed as raw bytes).
-  Per-collection keys are the sharing unit for future multi-app interop -- never
-  encrypt two collections with the same KAK.
+  salt-hashes a string), and the app's ONE identity X25519 key-agreement key is
+  the Montgomery twin of that controller DID (on `IdentityAgents`). There is a
+  single rule with no exceptions: an entry in a key-epoch roster is always the
+  X25519 twin of a controller `did:key`. The same identity KAK therefore admits
+  this app both to the collections it provisions itself and to a wallet-owned
+  collection the wallet SHARES with it -- one derivation at init, not one per
+  collection. (Earlier designs derived a separate per-collection KAK by HKDF
+  over the root seed; that is gone, along with its HKDF domain separation, so
+  one key now reads every collection the app touches.)
 - **All collections are EDV-encrypted client-side.** The server only ever sees
   JWE envelopes. Eight WAS collections: `action-items`, `projects`, `goals`,
   `questions`, `answers`, `web-links`, `thoughts`, `current-focus`. Names are
   deliberately unprefixed/generic: the WAS ecosystem goal is app
   interoperability (other TODO-type apps working on the same collections).
-  Multi-app access to these encrypted collections is on the roadmap -- treat the
-  document schemas as a shared contract (extend additively, never repurpose
-  fields) and keep the seed credential generalizable (see the plan's Risks item
-  8).
+  Multi-app access works by SHARING, not by handing over keys: a share is a
+  read-only zcap on the collection (a `https://w3id.org/byoe#shared-collection` descriptor)
+  fused with an entry in the collection's key-epoch roster, where the recipient
+  key is derived from the grantee's `did:key` controller and never transits. So
+  treat the document schemas as a shared contract (extend additively, never
+  repurpose fields), and never put another app's key material in a credential.
 - **Local-first**: RxDB (IndexedDB) holds envelopes at rest and replicates to
   WAS via the changes feed. On unlock, decrypted docs hydrate into zustand
   stores; ALL queries are in-memory selectors (WAS has no server-side search).

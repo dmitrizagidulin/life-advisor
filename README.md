@@ -35,8 +35,9 @@ Key properties:
   replicates them to WAS. On unlock, documents decrypt into in-memory stores;
   all queries are in-memory selectors.
 - **Multi-app interop is a design goal.** Collections use generic, unprefixed
-  names and per-collection encryption keys so other apps can eventually be
-  granted access to individual collections.
+  names, and access is granted per collection -- a read-only capability plus an
+  entry in that collection's key-epoch roster -- so other apps can eventually be
+  admitted to individual collections.
 
 The full design -- identity and key derivation, the login flows, the sync and
 conflict-resolution model, the id/timestamp planes, and the domain rules
@@ -45,11 +46,19 @@ structural changes.
 
 ## Security
 
-- The app's identity and all vault keys derive from a single 32-byte app root
+- The app's identity and its vault key derive from a single 32-byte app root
   seed, stored in the user's wallet as a self-issued `LifeAdvisorKey`
-  credential and recovered at login. Each collection's encryption key derives
-  from the root seed via HKDF, so sharing one collection exposes nothing about the
-  others.
+  credential and recovered at login. The vault key is the app's one X25519
+  key-agreement key, the twin of its `did:key` controller, and every collection
+  is encrypted to it: an entry in a key-epoch roster is always the twin of a
+  controller DID, whether the app is reading its own collections or one the
+  wallet shared with it.
+- Giving another party access to a collection never moves a key. The wallet
+  grants a read-only capability on the collection together with an entry in that
+  collection's key-epoch roster, and the recipient key is derived from the
+  grantee's `did:key` controller, so both sides compute it and nothing travels on
+  the wire. Removing access stops future reads but cannot take back what was
+  already read.
 - The wallet is the trust anchor; CHAPI origin binding plus an `origin` field
   baked into the seed credential guard against phishing.
 - While the app is unlocked, the seed and session live in IndexedDB, so

@@ -32,7 +32,7 @@ making structural changes.
 
 ### App root seed and the LifeAdvisorKey credential
 
-The app's identity and all of its vault keys derive from a single 32-byte
+The app's identity and its vault key derive from a single 32-byte
 **app root seed**. That seed is not generated per device or held only locally; it
 is stored in the user's wallet as a self-issued verifiable credential of type
 `LifeAdvisorKey`. The credential's subject carries the seed (base64url-encoded)
@@ -40,8 +40,8 @@ plus an `origin` field used as an anti-phishing check at login. It is signed by
 the seed-derived signer and is self-issued (issuer equals subject).
 
 Because the seed lives in the wallet, recovering it on a new device (via a
-QueryByExample request at login) recovers the app's full identity and every
-collection key. Nothing about the seed is device-specific.
+QueryByExample request at login) recovers the app's full identity and its vault
+key. Nothing about the seed is device-specific.
 
 ### Derivation
 
@@ -51,22 +51,30 @@ From the root seed:
   DID (via `CapabilityAgent.fromSeed` on the raw bytes) and its signer. This DID
   is the same on every device and is the identity that WAS zcaps are delegated
   to.
-- **Per-collection vault keys.** Each collection's X25519 EDV key-agreement key
-  (KAK) is derived separately with HKDF-SHA256 over the root seed, using
-  `info = 'kak:v1:<collectionId>'`, then the standard Ed25519-to-X25519
-  derivation. Collections are encrypted with per-collection KAKs from day one.
+- **Identity vault key.** The app has ONE X25519 EDV key-agreement key (KAK):
+  the Montgomery twin of that same controller DID, obtained by the standard
+  Ed25519-to-X25519 derivation and exposed as `IdentityAgents.keyAgreementKey`.
+  Every collection is encrypted to it, derived once at init rather than once per
+  collection.
 
-Per-collection keys are the unit of sharing. Because HKDF is one-way, handing
-another app one collection's key exposes nothing about the root seed or the
-sibling collections, and no re-encryption migration is needed to start sharing.
-**Never encrypt two collections with the same KAK.**
+One KAK, because a key-epoch roster admits recipients by exactly one rule: a
+recipient is the X25519 twin of a controller `did:key`. That rule has to hold
+for a share granted to an arbitrary `did:key` grantee, where no app seed exists
+anywhere to derive from, so it is the only rule that can also cover the
+collections this app provisions for itself. The honest cost is that the
+HKDF domain separation an earlier design had (one KAK per collection, derived
+with `info = 'kak:v1:<collectionId>'`) is gone: one key now reads every
+collection this app touches. It buys little here in practice -- the key only
+unwraps an epoch secret rather than being the content key, and the app persists
+the ROOT SEED anyway, so nothing that leaks a derived KAK would have failed to
+leak the seed.
 
 A subtlety worth pinning: the pinned convention (owned by `@interop/was-react`'s
-identity layer) is `CapabilityAgent.fromSeed({seed})` on the RAW 32 bytes, for
-both the root identity and the per-collection KAKs -- never `fromSecret`,
-which salt-hashes a STRING and would derive a different key for a byte array vs
-its text form. This convention is part of the shared-key contract: a mismatch
-silently derives different DIDs and KAKs for different consumers.
+identity layer) is `CapabilityAgent.fromSeed({seed})` on the RAW 32 bytes --
+never `fromSecret`, which salt-hashes a STRING and would derive a different key
+for a byte array vs its text form. This convention is part of the shared-key
+contract: a mismatch silently derives a different DID, and therefore a different
+KAK, for different consumers.
 
 ## Authentication: Login With Wallet (CHAPI)
 
@@ -82,7 +90,7 @@ signed response. The entry paths:
 1. Load the CHAPI polyfill (authn.io mediator).
 2. Send the App Connect VPR: DIDAuthentication plus the LifeAdvisorKey
    credential and one capability query per collection (allowing GET, HEAD,
-   PUT, POST, DELETE against `{type:'urn:was:collection', name}`).
+   PUT, POST, DELETE against `{type:'https://w3id.org/byoe#collection', name}`).
 3. In the same round, the wallet matches an existing app key or -- on first
    run -- mints the 32-byte seed and self-issues the same-shaped credential
    (marking the response `firstRun`), provisions the collections, and returns
@@ -92,11 +100,11 @@ signed response. The entry paths:
    credential, which fails closed as `WalletUnsupportedError` -- distinct from
    a user cancel (a null CHAPI response).
 4. Verify the response (see below); recover the seed and derive the controller
-   DID (the per-collection KAKs are derived later, where consumed -- at
+   DID (the identity KAK is derived from it later, where consumed -- at
    local-store init); parse the server URL and space id from a grant's
    invocation target and assert all grants share one space. There is no
    configured WAS host -- the wallet decides where the space lives.
-5. Build the WAS client, per-collection document ciphers, and RxDB; start
+5. Build the WAS client, the document ciphers, and RxDB; start
    sync. Any data created in the anonymous local session is adopted into
    the connected replica (last-write-wins merge by logical id).
 6. Persist the session record and enter the app.
@@ -104,7 +112,7 @@ signed response. The entry paths:
 On a returning login (new device or cleared storage) the same popup returns
 the existing credential: verify it is self-issued and that its `origin`
 matches the current origin, extract the seed, and re-derive the same
-controller DID with fresh grants. Because the DID and KAKs are stable,
+controller DID with fresh grants. Because the DID and its KAK are stable,
 previously stored data remains readable.
 
 ### Hot restore (seed persisted locally, zero popups)
@@ -141,7 +149,7 @@ Any failure aborts login and nothing is persisted.
 
 Grants are expiry-only (there is no revocation endpoint; the wallet default TTL
 is on the order of 30 days). An expired restore record falls back to the
-returning-login flow (same stable DID and KAKs, so data stays readable). A live
+returning-login flow (same stable DID and KAK, so data stays readable). A live
 401/403 mid-session surfaces a "storage access expired -- reconnect wallet"
 banner that relaunches the returning-login flow.
 
@@ -155,9 +163,10 @@ the VPR domain differs from the CHAPI origin) and shows the origin on its consen
 screen. The residual risk is a user approving a lookalike site's request for the
 LifeAdvisorKey; the mitigations are the `origin` field baked into the credential
 (verified by the app at login) and the wallet's origin display. Strict
-single-origin binding is in tension with multi-app interop (see below), so
-`origin` is expected to evolve into a user-extendable allowlist rather than a
-hard single value.
+single-origin binding costs nothing in multi-app interop (see below): a second
+app connects under its own origin-bound app-key credential and is admitted to a
+collection by a share grant to its own controller DID, so `origin` stays a hard
+single value.
 
 ## Storage: WAS collections and EDV encryption
 
@@ -258,8 +267,10 @@ over decrypted data. The query layer is a stable seam: selector signatures are
 fixed so that if WAS later ships blinded (encrypted, equality-only) index queries,
 the backing implementation can change without the UI or domain tests noticing.
 Sorting and non-equality logic would stay client-side regardless; index keys, if
-adopted, would derive per-collection with the same HKDF scheme as vault keys so
-that sharing a collection also carries query capability.
+adopted, would need a derivation of their own -- the vault key is a single
+identity KAK now, not a per-collection secret -- and would have to ride the
+collection's key-epoch roster so that sharing a collection also carries query
+capability.
 
 ## Domain rules (deliberate; do not "improve")
 
@@ -371,24 +382,43 @@ afterthought. Several decisions exist to keep it possible:
 
 - **Unprefixed collection names.** The wallet maps a collection name onto the one
   shared space, so a second app requesting the same names gets zcaps to the same
-  collections. What a second app lacks today is only the decryption key.
-- **Per-collection keys are the sharing unit.** Because vault keys are already
-  per-collection (HKDF from the root seed), sharing a collection means minting a
-  credential carrying just that one derived collection seed (plus authorized
-  origins) into the wallet; the second app requests that credential type and a
-  zcap for the same collection. Consent granularity matches zcap granularity,
-  HKDF one-wayness protects the root seed and siblings, and each app keeps its own
-  controller DID and grants. Per-collection key rotation is a new HKDF version tag
-  for that collection plus a re-encrypt of just that collection.
+  collections.
+- **A share is a capability plus a roster entry -- no key is ever transmitted.**
+  The wallet's share flow fuses two axes in one consent: a read-only zcap on the
+  collection (the _pull_ axis, asked for with a `https://w3id.org/byoe#shared-collection`
+  invocation-target descriptor and the read-only `GET`/`HEAD` action set), and an
+  entry in that collection's multi-recipient key-epoch roster (the _read_ axis).
+  The recipient key in that entry is **derived, not sent**: it is the X25519
+  (Montgomery) twin of the grantee's `did:key` controller, which both sides
+  compute independently, so no request can pair controller DID A with recipient
+  key B and no key material touches the wire. On the app side that key is the
+  identity key-agreement key on `IdentityAgents` -- the same one this app's own
+  collections are encrypted to, since a roster recipient is always the twin of a
+  controller DID; a `SharedCollectionReader` fetches the stored envelope raw and
+  decrypts it locally. There is no key-carrying credential and no derived
+  collection seed handed to a second app.
+- **Sharing is granted, not degraded.** `https://w3id.org/byoe#shared-collection` is a distinct
+  descriptor type rather than a flag, so a wallet that predates it resolves the
+  request unsatisfiable and fails closed. That matters because half a share -- the
+  zcap without the roster entry -- would hand the app ciphertext it cannot
+  decrypt, which reads as corrupt data rather than as a wallet needing an update.
+- **The honest ceiling.** Removing a share stops future reads but cannot take back
+  what has already been read. And resources written BEFORE a collection's first
+  share are single-recipient envelopes sealed to the owner alone; nothing
+  re-encrypts them, so they will not decrypt for the grantee. Both limits are what
+  the wallet's own consent screen states.
 - **Document schemas are a shared contract.** Once another app reads these
   collections, the payload shapes are a de-facto shared schema. Extend them
   ADDITIVELY; never repurpose an existing field.
-- **Origin binding must generalize.** The strict single-origin anti-phishing
-  guard would block legitimate second apps, so `origin` should become a
-  user-extendable allowlist and/or move to wallet consent-time matching.
+- **Origin binding stays strict.** The single-origin binding on the
+  `LifeAdvisorKey` credential is an anti-phishing guard on THIS app's own seed,
+  and sharing does not need it loosened: a second app connects under its own
+  app-key credential, bound to its own origin, and is admitted to a collection by
+  a share grant to its own controller DID. Do not widen `origin` into an
+  allowlist to enable interop.
 - **Keep the seed credential generalizable.** Do not bake life-advisor-only
-  assumptions into the credential vocabulary; keep it self-describing so
-  collection-sharing needs no breaking changes.
+  assumptions into the credential vocabulary; keep it self-describing. It carries
+  this app's identity root only -- never another app's key material.
 
 ### Encryption marker caveat
 
