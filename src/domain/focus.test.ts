@@ -49,14 +49,14 @@ describe('nonDefaultFocusExists', () => {
 
 describe('focusOn / resetFocus', () => {
   it('focusOn builds a fixed-id focus doc for the target', () => {
-    const doc = focusOn('project', 'p1', D)
+    const doc = focusOn('project', 'p1')
     expect(doc.id).toBe('_current_focus')
     expect(doc.focusType).toBe('project')
     expect(doc.focusKey).toBe('p1')
   })
 
   it('resetFocus builds the today sentinel', () => {
-    const doc = resetFocus(D)
+    const doc = resetFocus()
     expect(doc.focusType).toBe('day')
     expect(doc.focusKey).toBe('today')
     expect(nonDefaultFocusExists(doc, TODAY)).toBe(false)

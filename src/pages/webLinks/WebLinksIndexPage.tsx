@@ -24,7 +24,6 @@ import EditIcon from '@mui/icons-material/Edit'
 import { createWebLink } from '@/domain/factories'
 import { linkLabel } from '@/domain/webLinks'
 import { compareChildren } from '@/domain/sort'
-import { getWriterId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { convertLinkToActionItem } from '@/stores/entityActions'
 
@@ -40,11 +39,7 @@ export function WebLinksIndexPage() {
       return
     }
     await insert(
-      createWebLink({
-        url: url.trim(),
-        name: name.trim() || undefined,
-        writerId: getWriterId()
-      })
+      createWebLink({ url: url.trim(), name: name.trim() || undefined })
     )
     setUrl('')
     setName('')

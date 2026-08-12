@@ -28,7 +28,6 @@ import {
   sortActionItemsCompletedDesc
 } from '@/domain/sort'
 import { formatTimestamp } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
@@ -88,8 +87,7 @@ export function ProjectShowPage() {
       createQuestion({
         name: questionName.trim(),
         parentType: 'project',
-        parentKey: project!.id,
-        writerId: getWriterId()
+        parentKey: project!.id
       })
     )
     setQuestionName('')
@@ -104,8 +102,7 @@ export function ProjectShowPage() {
       mywnCategory: 'someday',
       area: project!.area,
       parentType: 'project',
-      parentKey: project!.id,
-      writerId: getWriterId()
+      parentKey: project!.id
     })
     await insertItem(item)
     if (itemUrl.trim() !== '') {
@@ -113,8 +110,7 @@ export function ProjectShowPage() {
         createWebLink({
           url: itemUrl.trim(),
           parentType: 'actionItem',
-          parentKey: item.id,
-          writerId: getWriterId()
+          parentKey: item.id
         })
       )
     }

@@ -9,7 +9,6 @@ import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import { createProject } from '@/domain/factories'
 import { allForStatus } from '@/domain/queries'
 import { compareProjects } from '@/domain/sort'
-import { getWriterId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { ProjectListTable } from '@/components/ProjectListTable'
 
@@ -22,9 +21,7 @@ export function ProjectsIndexPage() {
     if (name.trim() === '') {
       return
     }
-    await insert(
-      createProject({ name: name.trim(), area: 'soul', writerId: getWriterId() })
-    )
+    await insert(createProject({ name: name.trim(), area: 'soul' }))
     setName('')
   }
 

@@ -33,12 +33,12 @@ export function linkLabel(link: WebLinkDoc): string {
 export function toActionItem(
   link: WebLinkDoc,
   opts: {
-    writerId: string
+    writerId?: string
     now?: string
     itemId?: string
     linkId?: string
     today?: string
-  }
+  } = {}
 ): { item: ActionItemDoc; link: WebLinkDoc; deleteWebLinkId: string } {
   const now = opts.now ?? nowIso()
   const today = opts.today ?? todayKey()
@@ -76,7 +76,12 @@ export function toActionItem(
 export function fromActionItem(
   item: ActionItemDoc,
   links: WebLinkDoc[],
-  opts: { writerId: string; now?: string; linkId?: string; today?: string }
+  opts: {
+    writerId?: string
+    now?: string
+    linkId?: string
+    today?: string
+  } = {}
 ): {
   link: WebLinkDoc
   deleteActionItemId: string

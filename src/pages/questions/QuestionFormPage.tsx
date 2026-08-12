@@ -4,8 +4,6 @@
 import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createQuestion } from '@/domain/factories'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useQuestions } from '@/stores/entities/questions'
 import {
   EntityFormShell,
@@ -38,14 +36,12 @@ export function QuestionFormPage({ mode }: { mode: 'new' | 'edit' }) {
       buildNew: () =>
         createQuestion({
           name: name.trim(),
-          description: description.trim() || undefined,
-          writerId: getWriterId()
+          description: description.trim() || undefined
         }),
       buildEdit: () => ({
         ...existing!,
         name: name.trim(),
-        description: description.trim() || undefined,
-        updatedAt: nowIso()
+        description: description.trim() || undefined
       })
     })
     navigate(`/questions/${saved.id}`)

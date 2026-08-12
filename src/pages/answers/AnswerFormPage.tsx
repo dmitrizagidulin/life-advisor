@@ -7,8 +7,6 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { TextField } from '@mui/material'
 import { createAnswer } from '@/domain/factories'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useAnswers } from '@/stores/entities/answers'
 import {
   EntityFormShell,
@@ -44,12 +42,8 @@ export function AnswerFormPage({ mode }: { mode: 'new' | 'edit' }) {
       insert,
       update,
       buildNew: () =>
-        createAnswer({
-          name: name.trim(),
-          parentKey: questionId,
-          writerId: getWriterId()
-        }),
-      buildEdit: () => ({ ...existing!, name: name.trim(), updatedAt: nowIso() })
+        createAnswer({ name: name.trim(), parentKey: questionId }),
+      buildEdit: () => ({ ...existing!, name: name.trim() })
     })
     navigate(questionId ? `/questions/${questionId}` : '/questions')
   }

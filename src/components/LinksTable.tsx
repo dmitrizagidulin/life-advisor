@@ -23,7 +23,6 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { createWebLink } from '@/domain/factories'
 import { linkLabel } from '@/domain/webLinks'
 import { forParent } from '@/domain/parent'
-import { getWriterId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { convertLinkToActionItem } from '@/stores/entityActions'
 import type { ParentType } from '@/types/domain'
@@ -52,8 +51,7 @@ export function LinksTable({
         url: url.trim(),
         name: name.trim() || undefined,
         parentType,
-        parentKey,
-        writerId: getWriterId()
+        parentKey
       })
     )
     setUrl('')

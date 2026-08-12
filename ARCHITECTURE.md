@@ -246,6 +246,15 @@ sorting and conflict resolution.
 - **Conflict.** A 412 maps to a sync-conflict error; the resolver re-reads the
   current head and applies last-writer-wins by payload `updatedAt` (ISO lexical
   compare), with a per-install random `writerId` as tiebreaker.
+- **Stamping.** The library's entity-store write verbs (`insert` / `update` /
+  `upsert`) stamp `updatedAt` and `writerId` themselves on every persisted
+  write, overwriting anything the caller passed. The app therefore never stamps:
+  factories and the pure `domain/` transforms may carry the fields (tests rely
+  on them for sorting and history), but their values are replaced at write time,
+  so a forgotten stamp can no longer degrade conflict resolution. The one write
+  path that does not go through an entity store -- the current-focus singleton,
+  which calls `LocalStore.upsertEntity` directly -- stamps with the library's
+  `stampLww` helper.
 
 ### Replication
 

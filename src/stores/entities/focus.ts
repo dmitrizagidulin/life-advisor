@@ -4,10 +4,12 @@
  * so the store holds a single `doc`. Hydration reconciles any duplicate rows (two
  * devices that each set focus before syncing) down to the LWW winner, and writes
  * go through the store's upsert (the hydration index decides insert vs in-place
- * update), so the app never mints a second envelope for the singleton.
+ * update), so the app never mints a second envelope for the singleton. This is
+ * the app's one write path that does not run through an entity store, so it
+ * stamps the last-write-wins fields itself via `stampLww`.
  */
 import { create } from 'zustand'
-import { requireStore, getWriterId } from '@interop/was-react'
+import { requireStore, stampLww } from '@interop/was-react'
 import { focusOn, resetFocus } from '@/domain/focus'
 import type { CurrentFocusDoc } from '@/types/domain'
 
@@ -33,12 +35,12 @@ export const useFocus = create<FocusStore>(set => ({
     set({ doc })
   },
   setFocus: async (focusType, focusKey) => {
-    const doc = focusOn(focusType, focusKey, getWriterId())
+    const doc = stampLww(focusOn(focusType, focusKey))
     await requireStore().upsertEntity(COLLECTION, doc)
     set({ doc })
   },
   reset: async () => {
-    const doc = resetFocus(getWriterId())
+    const doc = stampLww(resetFocus())
     await requireStore().upsertEntity(COLLECTION, doc)
     set({ doc })
   }

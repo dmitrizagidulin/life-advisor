@@ -12,8 +12,6 @@ import {
 import { MYWN_CATEGORIES } from '@/types/domain'
 import { createActionItem, createWebLink } from '@/domain/factories'
 import { enforceCompletedAt } from '@/domain/actionItems'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { AreaSelect } from '@/components/AreaSelect'
@@ -65,8 +63,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
             mywnCategory: category,
             area,
             done,
-            timeElapsed: hours,
-            writerId: getWriterId()
+            timeElapsed: hours
           })
         ),
       buildEdit: () =>
@@ -77,8 +74,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
           mywnCategory: category,
           area,
           done,
-          timeElapsed: hours,
-          updatedAt: nowIso()
+          timeElapsed: hours
         }),
       onInserted: async (item) => {
         if (url.trim() !== '') {
@@ -86,8 +82,7 @@ export function ActionItemFormPage({ mode }: { mode: 'new' | 'edit' }) {
             createWebLink({
               url: url.trim(),
               parentType: 'actionItem',
-              parentKey: item.id,
-              writerId: getWriterId()
+              parentKey: item.id
             })
           )
         }

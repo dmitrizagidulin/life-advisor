@@ -1,8 +1,12 @@
 /**
  * Entity factories applying the entity property defaults. Each takes the
- * required user fields plus a `writerId` (the LWW tiebreak), and injectable
- * `now`/`id` for deterministic tests. Web links and thoughts default onto
- * today's virtual day parent.
+ * required user fields plus injectable `now`/`id` for deterministic tests. Web
+ * links and thoughts default onto today's virtual day parent.
+ *
+ * The last-write-wins fields (`updatedAt`, `writerId`) are placeholders here:
+ * the entity store stamps them on every persisted write, so callers never
+ * supply them. Tests still pass explicit values to exercise the sorting and
+ * history comparators over unpersisted documents.
  */
 import { nowIso, todayKey } from '@/lib/dates'
 import { uuidv7 } from 'uuidv7'
@@ -20,7 +24,7 @@ import { enforceDefaultDayParent } from './parent'
 import { changeStatus } from './projects'
 
 export function createActionItem(
-  input: Partial<ActionItemDoc> & { name: string; writerId: string },
+  input: Partial<ActionItemDoc> & { name: string },
   now: string = nowIso(),
   id: string = uuidv7()
 ): ActionItemDoc {
@@ -38,12 +42,12 @@ export function createActionItem(
     parentKey: input.parentKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
 }
 
 export function createProject(
-  input: Partial<ProjectDoc> & { name: string; writerId: string },
+  input: Partial<ProjectDoc> & { name: string },
   now: string = nowIso(),
   id: string = uuidv7()
 ): ProjectDoc {
@@ -63,7 +67,7 @@ export function createProject(
     parentKey: input.parentKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
   // Route the initial status through the status machine so a project created
   // as completed/canceled gets the right timestamps stamped (and cleared),
@@ -72,7 +76,7 @@ export function createProject(
 }
 
 export function createGoal(
-  input: Partial<GoalDoc> & { name: string; writerId: string },
+  input: Partial<GoalDoc> & { name: string },
   now: string = nowIso(),
   id: string = uuidv7()
 ): GoalDoc {
@@ -87,12 +91,12 @@ export function createGoal(
     parentKey: input.parentKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
 }
 
 export function createQuestion(
-  input: Partial<QuestionDoc> & { name: string; writerId: string },
+  input: Partial<QuestionDoc> & { name: string },
   now: string = nowIso(),
   id: string = uuidv7()
 ): QuestionDoc {
@@ -107,12 +111,12 @@ export function createQuestion(
     parentKey: input.parentKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
 }
 
 export function createAnswer(
-  input: Partial<AnswerDoc> & { parentKey: string; writerId: string },
+  input: Partial<AnswerDoc> & { parentKey: string },
   now: string = nowIso(),
   id: string = uuidv7()
 ): AnswerDoc {
@@ -124,12 +128,12 @@ export function createAnswer(
     parentKey: input.parentKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
 }
 
 export function createWebLink(
-  input: Partial<WebLinkDoc> & { url: string; writerId: string },
+  input: Partial<WebLinkDoc> & { url: string },
   now: string = nowIso(),
   id: string = uuidv7(),
   today: string = todayKey()
@@ -143,13 +147,13 @@ export function createWebLink(
     parentKey: input.parentKey ?? 'today',
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
   return enforceDefaultDayParent(base, today)
 }
 
 export function createThought(
-  input: Partial<ThoughtDoc> & { name: string; writerId: string },
+  input: Partial<ThoughtDoc> & { name: string },
   now: string = nowIso(),
   id: string = uuidv7(),
   today: string = todayKey()
@@ -161,7 +165,7 @@ export function createThought(
     parentKey: input.parentKey ?? 'today',
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
   return enforceDefaultDayParent(base, today)
 }
@@ -170,7 +174,7 @@ export function createCurrentFocus(
   input: {
     focusType: CurrentFocusDoc['focusType']
     focusKey: string
-    writerId: string
+    writerId?: string
     createdAt?: string
     updatedAt?: string
   },
@@ -182,6 +186,6 @@ export function createCurrentFocus(
     focusKey: input.focusKey,
     createdAt: input.createdAt ?? now,
     updatedAt: input.updatedAt ?? now,
-    writerId: input.writerId
+    writerId: input.writerId ?? ''
   }
 }

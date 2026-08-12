@@ -61,6 +61,15 @@ structural changes.
 - **Updates are in-place**: re-encrypt under the same envelope id with
   `sequence`+1 and `If-Match`; deletes are tombstones; conflicts resolve LWW by
   payload `updatedAt` (writerId tiebreak).
+- **The library stamps the LWW fields; the app never does**: the entity-store
+  `insert`/`update`/`upsert` verbs set `updatedAt` and `writerId` on every
+  persisted write and overwrite whatever the caller supplied. Do not reintroduce
+  stamping at a call site. The domain factories and pure transforms may still
+  carry the fields (tests depend on them for sorting and history), but those
+  values never reach the server. The current-focus singleton writes through
+  `LocalStore.upsertEntity` rather than an entity store, so it stamps with the
+  library's `stampLww` helper; any new direct-to-`LocalStore` write must do the
+  same.
 
 ## Reference codebases (read-only; consume `@interop/*` from the npm registry)
 

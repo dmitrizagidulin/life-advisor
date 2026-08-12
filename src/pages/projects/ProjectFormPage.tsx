@@ -8,8 +8,6 @@ import { MenuItem, TextField } from '@mui/material'
 import { PROJECT_STATUS } from '@/types/domain'
 import { createProject } from '@/domain/factories'
 import { changeStatus } from '@/domain/projects'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { AreaSelect } from '@/components/AreaSelect'
 import {
@@ -50,8 +48,7 @@ export function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
           description: description.trim() || undefined,
           url: url.trim() || undefined,
           status,
-          area,
-          writerId: getWriterId()
+          area
         }),
       buildEdit: () => {
         const base = {
@@ -59,8 +56,7 @@ export function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
           name: name.trim(),
           description: description.trim() || undefined,
           url: url.trim() || undefined,
-          area,
-          updatedAt: nowIso()
+          area
         }
         return status !== existing!.status ? changeStatus(base, status) : base
       }

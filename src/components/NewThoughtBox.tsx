@@ -5,7 +5,6 @@
 import { useState } from 'react'
 import { Alert, Box, Button, Snackbar, TextField } from '@mui/material'
 import { createThought } from '@/domain/factories'
-import { getWriterId } from '@interop/was-react'
 import { useThoughts } from '@/stores/entities/thoughts'
 
 export function NewThoughtBox() {
@@ -18,7 +17,7 @@ export function NewThoughtBox() {
     if (name === '') {
       return
     }
-    await insert(createThought({ name, writerId: getWriterId() }))
+    await insert(createThought({ name }))
     setText('')
     setSaved(true)
   }

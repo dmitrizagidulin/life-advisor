@@ -1,5 +1,24 @@
 # life-advisor Changelog
 
+## 0.3.0 - TBD
+
+### Changed
+
+- Upgrade `@interop/was-react` to `^0.14.0`. The entity store's `insert` /
+  `update` / `upsert` verbs now stamp the last-write-wins fields (`updatedAt`,
+  `writerId`) themselves and overwrite any the caller supplied, so all app-side
+  stamping is removed: the entity form pages, the index and show pages,
+  `NewThoughtBox`, `LinksTable`, `CategoryList`, and `stores/entityActions.ts`
+  no longer thread `getWriterId()` or an `updatedAt: nowIso()` into write
+  payloads.
+- `writerId` is now optional on the `domain/factories.ts` inputs and on the
+  `toActionItem` / `fromActionItem` conversion options; `focusOn` and
+  `resetFocus` drop their `writerId` parameter. Stored rows still carry both
+  fields, and the domain tests still pass explicit values to exercise sorting
+  and history.
+- The current-focus store writes through `LocalStore.upsertEntity` rather than
+  an entity store, so it stamps with the library's new `stampLww` helper.
+
 ## 0.2.0 - 2026-08-12
 
 ### Changed

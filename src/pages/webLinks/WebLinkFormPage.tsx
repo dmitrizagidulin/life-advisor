@@ -5,8 +5,6 @@
 import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createWebLink } from '@/domain/factories'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import {
   EntityFormShell,
@@ -41,15 +39,13 @@ export function WebLinkFormPage({ mode }: { mode: 'new' | 'edit' }) {
         createWebLink({
           url: url.trim(),
           name: name.trim() || undefined,
-          description: description.trim() || undefined,
-          writerId: getWriterId()
+          description: description.trim() || undefined
         }),
       buildEdit: () => ({
         ...existing!,
         url: url.trim(),
         name: name.trim() || undefined,
-        description: description.trim() || undefined,
-        updatedAt: nowIso()
+        description: description.trim() || undefined
       })
     })
     navigate('/web-links')

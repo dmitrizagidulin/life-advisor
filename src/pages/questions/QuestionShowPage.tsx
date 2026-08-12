@@ -16,7 +16,6 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete'
 import { createAnswer } from '@/domain/factories'
 import { forParent } from '@/domain/parent'
-import { getWriterId } from '@interop/was-react'
 import { useQuestions } from '@/stores/entities/questions'
 import { useAnswers } from '@/stores/entities/answers'
 import { LinksTable } from '@/components/LinksTable'
@@ -42,11 +41,7 @@ export function QuestionShowPage() {
       return
     }
     await insertAnswer(
-      createAnswer({
-        name: answerText.trim(),
-        parentKey: question!.id,
-        writerId: getWriterId()
-      })
+      createAnswer({ name: answerText.trim(), parentKey: question!.id })
     )
     setAnswerText('')
   }

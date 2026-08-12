@@ -5,8 +5,6 @@
 import { useState } from 'react'
 import { TextField } from '@mui/material'
 import { createThought } from '@/domain/factories'
-import { nowIso } from '@/lib/dates'
-import { getWriterId } from '@interop/was-react'
 import { useThoughts } from '@/stores/entities/thoughts'
 import {
   EntityFormShell,
@@ -34,8 +32,8 @@ export function ThoughtFormPage({ mode }: { mode: 'new' | 'edit' }) {
       mode,
       insert,
       update,
-      buildNew: () => createThought({ name: name.trim(), writerId: getWriterId() }),
-      buildEdit: () => ({ ...existing!, name: name.trim(), updatedAt: nowIso() })
+      buildNew: () => createThought({ name: name.trim() }),
+      buildEdit: () => ({ ...existing!, name: name.trim() })
     })
     navigate('/thoughts')
   }
