@@ -15,7 +15,7 @@ import {
 } from '@mui/material'
 import { createGoal } from '@/domain/factories'
 import { splitGoals } from '@/domain/goals'
-import { getClientId } from '@interop/was-react'
+import { getWriterId } from '@interop/was-react'
 import { useGoals } from '@/stores/entities/goals'
 import type { GoalDoc } from '@/types/domain'
 
@@ -50,7 +50,7 @@ export function GoalsIndexPage() {
     if (name.trim() === '') {
       return
     }
-    await insert(createGoal({ name: name.trim(), clientId: getClientId() }))
+    await insert(createGoal({ name: name.trim(), writerId: getWriterId() }))
     setName('')
   }
 

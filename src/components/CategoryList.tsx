@@ -19,7 +19,7 @@ import {
 import { createActionItem, createWebLink } from '@/domain/factories'
 import { categoryMove } from '@/domain/actionItems'
 import { bucketByParent } from '@/domain/parent'
-import { getClientId } from '@interop/was-react'
+import { getWriterId } from '@interop/was-react'
 import { useActionItems } from '@/stores/entities/actionItems'
 import { useWebLinks } from '@/stores/entities/webLinks'
 import { ActionItemRow, EMPTY_WEB_LINKS } from './ActionItemRow'
@@ -61,7 +61,7 @@ export function CategoryList({
       name: trimmed,
       mywnCategory: category,
       area: focusArea,
-      clientId: getClientId()
+      writerId: getWriterId()
     })
     await insertItem(item)
     if (url.trim() !== '') {
@@ -70,7 +70,7 @@ export function CategoryList({
           url: url.trim(),
           parentType: 'actionItem',
           parentKey: item.id,
-          clientId: getClientId()
+          writerId: getWriterId()
         })
       )
     }

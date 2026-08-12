@@ -19,12 +19,12 @@ describe('currentFocus', () => {
   })
 
   it("resolves the day/'today' sentinel to today's date", () => {
-    const doc = createCurrentFocus({ focusType: 'day', focusKey: 'today', clientId: D })
+    const doc = createCurrentFocus({ focusType: 'day', focusKey: 'today', writerId: D })
     expect(currentFocus(doc, TODAY)).toEqual({ focusType: 'day', focusKey: TODAY })
   })
 
   it('returns an entity focus verbatim', () => {
-    const doc = createCurrentFocus({ focusType: 'project', focusKey: 'proj1', clientId: D })
+    const doc = createCurrentFocus({ focusType: 'project', focusKey: 'proj1', writerId: D })
     expect(currentFocus(doc, TODAY)).toEqual({ focusType: 'project', focusKey: 'proj1' })
   })
 })
@@ -32,17 +32,17 @@ describe('currentFocus', () => {
 describe('nonDefaultFocusExists', () => {
   it('false for missing doc and the today sentinel', () => {
     expect(nonDefaultFocusExists(null, TODAY)).toBe(false)
-    const sentinel = createCurrentFocus({ focusType: 'day', focusKey: 'today', clientId: D })
+    const sentinel = createCurrentFocus({ focusType: 'day', focusKey: 'today', writerId: D })
     expect(nonDefaultFocusExists(sentinel, TODAY)).toBe(false)
   })
 
   it("false when the focus is today's explicit date", () => {
-    const doc = createCurrentFocus({ focusType: 'day', focusKey: TODAY, clientId: D })
+    const doc = createCurrentFocus({ focusType: 'day', focusKey: TODAY, writerId: D })
     expect(nonDefaultFocusExists(doc, TODAY)).toBe(false)
   })
 
   it('true for an entity focus', () => {
-    const doc = createCurrentFocus({ focusType: 'goal', focusKey: 'g1', clientId: D })
+    const doc = createCurrentFocus({ focusType: 'goal', focusKey: 'g1', writerId: D })
     expect(nonDefaultFocusExists(doc, TODAY)).toBe(true)
   })
 })

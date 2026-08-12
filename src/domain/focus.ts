@@ -33,19 +33,19 @@ export function currentFocus(
 export function focusOn(
   focusType: FocusType,
   focusKey: string,
-  clientId: string,
+  writerId: string,
   now: string = nowIso()
 ): CurrentFocusDoc {
-  return createCurrentFocus({ focusType, focusKey, clientId }, now)
+  return createCurrentFocus({ focusType, focusKey, writerId }, now)
 }
 
 /** The default focus doc: today's day via the `'today'` sentinel. */
 export function resetFocus(
-  clientId: string,
+  writerId: string,
   now: string = nowIso()
 ): CurrentFocusDoc {
   return createCurrentFocus(
-    { focusType: 'day', focusKey: 'today', clientId },
+    { focusType: 'day', focusKey: 'today', writerId },
     now
   )
 }

@@ -1,9 +1,35 @@
 # life-advisor Changelog
 
-## Unreleased - TBD
+## 0.2.0 - TBD
 
 ### Changed
 
+- Upgrade `@interop/was-react` to `^0.13.0`. Three breaking items apply here:
+  - App Connect moves to the `appUrl` profile. `WAS_APP_CONFIG.appUrl`
+    (`APP_URL`, the origin root, derived from the live browser origin) replaces
+    the `credential: { credentialType, vocabBase }` block, which is gone along
+    with the `LifeAdvisorKey` credential type: the app key is now identified by
+    the `AppKeyCredential` marker type plus its `credentialSubject.appUrl`, and
+    app identity is scoped to the triple (user, origin, `appUrl`).
+  - The last-write-wins tiebreak field is renamed `clientId` to `writerId`
+    (`getClientId` is `getWriterId`), across the domain payloads, factories,
+    stores, and UI. A writer id is an unkeyed, clearable attribution label,
+    never an identity. The library migrates the localStorage key itself;
+    payloads already stored with a `clientId` field lose their tiebreaker and
+    fall back to the `updatedAt` comparison.
+  - The App Connect descriptor type IRIs are renamed:
+    `https://w3id.org/byoe#private-collection` (was `byoe#collection`) and
+    `https://w3id.org/byoe#shared-wallet-collection` (was
+    `byoe#shared-collection`); logging in requires a wallet that resolves the
+    new IRIs. Docs updated; the app names them only in prose.
+  Also in the range: `0.11.0` epoch-from-birth descriptors, `0.12.0` shared WAS
+  path/sync primitives, and public collections may now request the full action
+  vocabulary (`PUBLIC_ACTIONS` removed) -- none of which this app names.
+- Upgrade `@interop/was-react` to `^0.10.0`: `0.10.0` enforces the App Connect
+  action ceilings app-side (each collection grant is requested and required
+  within its descriptor class ceiling), and `0.10.1` fixes a logout clicked
+  during the post-reload remount churn hanging the app instead of returning to
+  the login page. No app code changes.
 - Upgrade `@interop/was-react` to `^0.8.2` (from `^0.3.5`), tracking the
   wallet-side identity-model refactors. The two releases that matter here:
   `0.5.0` encrypts every private collection to the app's identity

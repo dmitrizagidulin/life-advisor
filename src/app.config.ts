@@ -22,6 +22,14 @@ export const APP_ORIGIN =
     ? window.location.origin
     : 'http://localhost:5173')
 
+// This app's canonical URL: the SPA is served from the origin root, so the
+// canonical URL is that root, derived from the live origin so every deployment
+// target works unconfigured. It must be absolute, fragment-less, and
+// same-origin with the browser origin -- `new URL()` normalizes the
+// serialization (default port, percent-encoding case, dot segments) so two
+// spellings never name two applications.
+export const APP_URL = new URL('/', APP_ORIGIN).toString()
+
 // Replication tuning (optional). Undefined leaves the adapter defaults.
 export const WAS_SYNC_BATCH_SIZE: number | undefined =
   env.VITE_WAS_SYNC_BATCH_SIZE
@@ -67,20 +75,18 @@ export type WasCollectionId = (typeof LA_COLLECTIONS)[number]['id']
  * and the auth store both read from here).
  *
  * PINNED values -- part of this app's stored-data contract, never change them:
- * `credential` names the seed VC type the wallet holds, and `dbName` names the
- * local RxDB database. Changing either orphans existing identities and data.
+ * `appUrl` identifies this application within its origin (the app key is scoped
+ * to the triple (user, origin, `appUrl`)), and `dbName` names the local RxDB
+ * database. Changing either orphans existing identities and data.
  */
 export const WAS_APP_CONFIG: WasAppConfig = {
   appName: 'Life Advisor',
   appOrigin: APP_ORIGIN,
+  appUrl: APP_URL,
   // The app is gated behind Login With Wallet. Only affects the router's
   // rendering, never the store's transitions.
   onboarding: 'login-gated',
   collections: [...LA_COLLECTIONS],
-  credential: {
-    credentialType: 'LifeAdvisorKey',
-    vocabBase: 'urn:life-advisor:vocab#'
-  },
   dbName: 'life-advisor',
   sync: {
     ...(WAS_SYNC_BATCH_SIZE !== undefined && {

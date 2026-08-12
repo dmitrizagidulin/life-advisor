@@ -6,8 +6,8 @@ import { splitGoals, subGoals } from './goals'
 import { createGoal } from './factories'
 
 const D = 'dev'
-const goal = (o: Omit<Parameters<typeof createGoal>[0], 'clientId'>) =>
-  createGoal({ ...o, clientId: D })
+const goal = (o: Omit<Parameters<typeof createGoal>[0], 'writerId'>) =>
+  createGoal({ ...o, writerId: D })
 
 describe('subGoals', () => {
   it('returns goal-parented children ordered createdAt DESC', () => {

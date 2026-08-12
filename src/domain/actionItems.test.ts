@@ -14,8 +14,8 @@ import { createActionItem } from './factories'
 
 const D = 'dev'
 const NOW = '2026-07-06T12:00:00.000Z'
-const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'clientId'>) =>
-  createActionItem({ ...o, clientId: D })
+const ai = (o: Omit<Parameters<typeof createActionItem>[0], 'writerId'>) =>
+  createActionItem({ ...o, writerId: D })
 
 describe('toggleDone', () => {
   it('marks undone item done and stamps completedAt', () => {

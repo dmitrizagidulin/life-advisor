@@ -33,7 +33,7 @@ export function linkLabel(link: WebLinkDoc): string {
 export function toActionItem(
   link: WebLinkDoc,
   opts: {
-    clientId: string
+    writerId: string
     now?: string
     itemId?: string
     linkId?: string
@@ -47,7 +47,7 @@ export function toActionItem(
       name: link.name ?? '',
       parentType: link.parentType,
       parentKey: link.parentKey,
-      clientId: opts.clientId
+      writerId: opts.writerId
     },
     now,
     opts.itemId
@@ -58,7 +58,7 @@ export function toActionItem(
       url: link.url,
       parentType: 'actionItem',
       parentKey: item.id,
-      clientId: opts.clientId
+      writerId: opts.writerId
     },
     now,
     opts.linkId,
@@ -76,7 +76,7 @@ export function toActionItem(
 export function fromActionItem(
   item: ActionItemDoc,
   links: WebLinkDoc[],
-  opts: { clientId: string; now?: string; linkId?: string; today?: string }
+  opts: { writerId: string; now?: string; linkId?: string; today?: string }
 ): {
   link: WebLinkDoc
   deleteActionItemId: string
@@ -93,7 +93,7 @@ export function fromActionItem(
       url: first.url,
       parentType: item.parentType,
       parentKey: item.parentKey,
-      clientId: opts.clientId
+      writerId: opts.writerId
     },
     now,
     opts.linkId,

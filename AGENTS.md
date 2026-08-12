@@ -14,8 +14,10 @@ structural changes.
   Storage (WAS) space using wallet-delegated zcaps. It never holds the wallet
   root key and never provisions the space.
 - **App identity + vault key** come from a 32-byte app root seed stored in the
-  wallet as a self-issued `LifeAdvisorKey` credential (minted wallet-side on
-  first run and returned via the one-popup App Connect login). The root seed
+  wallet as a self-issued app-key credential (the marker type
+  `AppKeyCredential`, scoped to this app by its `credentialSubject.appUrl`;
+  minted wallet-side on first run and returned via the one-popup App Connect
+  login). The root seed
   derives the stable `did:key` controller (
   CapabilityAgent.fromSeed on the raw bytes -- never fromSecret, which
   salt-hashes a string), and the app's ONE identity X25519 key-agreement key is
@@ -33,7 +35,7 @@ structural changes.
   deliberately unprefixed/generic: the WAS ecosystem goal is app
   interoperability (other TODO-type apps working on the same collections).
   Multi-app access works by SHARING, not by handing over keys: a share is a
-  read-only zcap on the collection (a `https://w3id.org/byoe#shared-collection` descriptor)
+  read-only zcap on the collection (a `https://w3id.org/byoe#shared-wallet-collection` descriptor)
   fused with an entry in the collection's key-epoch roster, where the recipient
   key is derived from the grantee's `did:key` controller and never transits. So
   treat the document schemas as a shared contract (extend additively, never
@@ -46,7 +48,8 @@ structural changes.
   the session store, hooks, and the MUI components (`ProtectedRoute`, sync
   status, the logout / clear-data / adoption dialogs). The app owns
   `WAS_APP_CONFIG` (`src/app.config.ts`), the collection-to-store registry
-  (`src/stores/collectionRegistry.ts`), the per-entity stores, and the UI. The `credential` type and `dbName` fields
+  (`src/stores/collectionRegistry.ts`), the per-entity stores, and the UI. The
+  `appUrl` and `dbName` fields
   of `WAS_APP_CONFIG` are data contracts -- once the app is deployed, changing
   them orphans existing users' identities and stored data.
 - **Two id planes**: logical entity id = uuidv7 INSIDE the encrypted payload;
@@ -57,7 +60,7 @@ structural changes.
   all domain sorting and LWW. Never mix them.
 - **Updates are in-place**: re-encrypt under the same envelope id with
   `sequence`+1 and `If-Match`; deletes are tombstones; conflicts resolve LWW by
-  payload `updatedAt` (clientId tiebreak).
+  payload `updatedAt` (writerId tiebreak).
 
 ## Reference codebases (read-only; consume `@interop/*` from the npm registry)
 

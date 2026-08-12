@@ -11,7 +11,7 @@ import { createGoal } from '@/domain/factories'
 import { subGoals } from '@/domain/goals'
 import { goalProjects } from '@/domain/queries'
 import { compareProjects } from '@/domain/sort'
-import { getClientId } from '@interop/was-react'
+import { getWriterId } from '@interop/was-react'
 import { useGoals } from '@/stores/entities/goals'
 import { useProjects } from '@/stores/entities/projects'
 import { ProjectListTable } from '@/components/ProjectListTable'
@@ -46,7 +46,7 @@ export function GoalShowPage() {
         name: subName.trim(),
         parentType: 'goal',
         parentKey: goal!.id,
-        clientId: getClientId()
+        writerId: getWriterId()
       })
     )
     setSubName('')

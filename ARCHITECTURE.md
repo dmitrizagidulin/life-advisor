@@ -30,13 +30,15 @@ making structural changes.
 
 ## Identity and keys
 
-### App root seed and the LifeAdvisorKey credential
+### App root seed and the app-key credential
 
 The app's identity and its vault key derive from a single 32-byte
 **app root seed**. That seed is not generated per device or held only locally; it
-is stored in the user's wallet as a self-issued verifiable credential of type
-`LifeAdvisorKey`. The credential's subject carries the seed (base64url-encoded)
-plus an `origin` field used as an anti-phishing check at login. It is signed by
+is stored in the user's wallet as a self-issued verifiable credential carrying
+the marker type `AppKeyCredential`. The credential's subject carries the seed
+(base64url-encoded) plus an `origin` field used as an anti-phishing check at
+login and an `appUrl` field naming this application within that origin (so the
+identity is scoped to the triple (user, origin, `appUrl`)). It is signed by
 the seed-derived signer and is self-issued (issuer equals subject).
 
 Because the seed lives in the wallet, recovering it on a new device (via a
@@ -80,17 +82,17 @@ KAK, for different consumers.
 
 The app is a CHAPI relying party. Login is the one-popup "App Connect"
 ceremony: a single CHAPI `get` carries a Verifiable Presentation Request
-combining DIDAuthentication with an `AppConnectQuery` (naming the
-LifeAdvisorKey credential type and one capability query per collection), and
+combining DIDAuthentication with an `AppConnectQuery` (naming this app's
+`appUrl` and one capability query per collection), and
 the wallet answers with the credential plus the delegated WAS zcaps in one
 signed response. The entry paths:
 
 ### Login (first run and returning, one popup)
 
 1. Load the CHAPI polyfill (authn.io mediator).
-2. Send the App Connect VPR: DIDAuthentication plus the LifeAdvisorKey
-   credential and one capability query per collection (allowing GET, HEAD,
-   PUT, POST, DELETE against `{type:'https://w3id.org/byoe#collection', name}`).
+2. Send the App Connect VPR: DIDAuthentication plus this app's `appUrl`
+   and one capability query per collection (allowing GET, HEAD,
+   PUT, POST, DELETE against `{type:'https://w3id.org/byoe#private-collection', name}`).
 3. In the same round, the wallet matches an existing app key or -- on first
    run -- mints the 32-byte seed and self-issues the same-shaped credential
    (marking the response `firstRun`), provisions the collections, and returns
@@ -135,7 +137,7 @@ On every login response the app verifies:
    particular must be done manually).
 3. Holder binding: the wallet signs the VP as ITS OWN holder DID (the app's
    controller DID never leaves the app), so binding is enforced through the
-   credential and the grants instead: the LifeAdvisorKey must be self-issued
+   credential and the grants instead: the app key must be self-issued
    with issuer equal to subject equal to the seed-derived `did:key`, and each
    grant's controller must be that same DID.
 4. Per zcap: controller is ours; invocation target is under the expected
@@ -161,7 +163,7 @@ attest the requesting page's origin to the wallet, and the response is delivered
 only to that origin. The wallet enforces domain binding (it refuses to sign when
 the VPR domain differs from the CHAPI origin) and shows the origin on its consent
 screen. The residual risk is a user approving a lookalike site's request for the
-LifeAdvisorKey; the mitigations are the `origin` field baked into the credential
+app key; the mitigations are the `origin` field baked into the credential
 (verified by the app at login) and the wallet's origin display. Strict
 single-origin binding costs nothing in multi-app interop (see below): a second
 app connects under its own origin-bound app-key credential and is admitted to a
@@ -243,7 +245,7 @@ sorting and conflict resolution.
 - **Delete.** Tombstone the row (a soft delete) so the deletion replicates.
 - **Conflict.** A 412 maps to a sync-conflict error; the resolver re-reads the
   current head and applies last-writer-wins by payload `updatedAt` (ISO lexical
-  compare), with a per-install random `clientId` as tiebreaker.
+  compare), with a per-install random `writerId` as tiebreaker.
 
 ### Replication
 
@@ -385,7 +387,7 @@ afterthought. Several decisions exist to keep it possible:
   collections.
 - **A share is a capability plus a roster entry -- no key is ever transmitted.**
   The wallet's share flow fuses two axes in one consent: a read-only zcap on the
-  collection (the _pull_ axis, asked for with a `https://w3id.org/byoe#shared-collection`
+  collection (the _pull_ axis, asked for with a `https://w3id.org/byoe#shared-wallet-collection`
   invocation-target descriptor and the read-only `GET`/`HEAD` action set), and an
   entry in that collection's multi-recipient key-epoch roster (the _read_ axis).
   The recipient key in that entry is **derived, not sent**: it is the X25519
@@ -397,7 +399,7 @@ afterthought. Several decisions exist to keep it possible:
   controller DID; a `SharedCollectionReader` fetches the stored envelope raw and
   decrypts it locally. There is no key-carrying credential and no derived
   collection seed handed to a second app.
-- **Sharing is granted, not degraded.** `https://w3id.org/byoe#shared-collection` is a distinct
+- **Sharing is granted, not degraded.** `https://w3id.org/byoe#shared-wallet-collection` is a distinct
   descriptor type rather than a flag, so a wallet that predates it resolves the
   request unsatisfiable and fails closed. That matters because half a share -- the
   zcap without the roster entry -- would hand the app ciphertext it cannot
@@ -411,7 +413,7 @@ afterthought. Several decisions exist to keep it possible:
   collections, the payload shapes are a de-facto shared schema. Extend them
   ADDITIVELY; never repurpose an existing field.
 - **Origin binding stays strict.** The single-origin binding on the
-  `LifeAdvisorKey` credential is an anti-phishing guard on THIS app's own seed,
+  app-key credential is an anti-phishing guard on THIS app's own seed,
   and sharing does not need it loosened: a second app connects under its own
   app-key credential, bound to its own origin, and is admitted to a collection by
   a share grant to its own controller DID. Do not widen `origin` into an

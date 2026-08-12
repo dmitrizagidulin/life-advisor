@@ -9,7 +9,7 @@ import { PROJECT_STATUS } from '@/types/domain'
 import { createProject } from '@/domain/factories'
 import { changeStatus } from '@/domain/projects'
 import { nowIso } from '@/lib/dates'
-import { getClientId } from '@interop/was-react'
+import { getWriterId } from '@interop/was-react'
 import { useProjects } from '@/stores/entities/projects'
 import { AreaSelect } from '@/components/AreaSelect'
 import {
@@ -51,7 +51,7 @@ export function ProjectFormPage({ mode }: { mode: 'new' | 'edit' }) {
           url: url.trim() || undefined,
           status,
           area,
-          clientId: getClientId()
+          writerId: getWriterId()
         }),
       buildEdit: () => {
         const base = {

@@ -47,8 +47,9 @@ structural changes.
 ## Security
 
 - The app's identity and its vault key derive from a single 32-byte app root
-  seed, stored in the user's wallet as a self-issued `LifeAdvisorKey`
-  credential and recovered at login. The vault key is the app's one X25519
+  seed, stored in the user's wallet as a self-issued app-key credential
+  (marker type `AppKeyCredential`, scoped by its `appUrl`) and recovered at
+  login. The vault key is the app's one X25519
   key-agreement key, the twin of its `did:key` controller, and every collection
   is encrypted to it: an entry in a key-epoch roster is always the twin of a
   controller DID, whether the app is reading its own collections or one the
